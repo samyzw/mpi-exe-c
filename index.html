@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exercices C — MPI</title>
+<meta name="description" content="Exercices de programmation en C pour le programme d'informatique de MPI : listes chaînées, structures de données, algorithmique.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --bg:#EAEFEC;
+  --bg-grid:rgba(23,32,36,0.06);
+  --paper:#FFFFFF;
+  --paper-border:#D8E0DC;
+  --ink:#172024;
+  --ink-soft:#55635F;
+  --ink-faint:#8A9793;
+  --accent:#0E7268;
+  --accent-strong:#0A5951;
+  --accent-soft:#E1F1EE;
+  --nav-bg:#12201E;
+  --nav-text:#CBD9D5;
+  --nav-text-dim:#75857F;
+  --nav-active:#1D3634;
+  --code-bg:#101A20;
+  --code-text:#DCE7E3;
+  --tok-comment:#74918C;
+  --tok-string:#3F8A5C;
+  --tok-keyword:#2F63B8;
+  --tok-type:#9A6B0C;
+  --tok-number:#B5562F;
+  --tok-preproc:#7A4FA8;
+  --tok-constant:#9A6B0C;
+  --diff-easy:#0E7268; --diff-easy-bg:#E1F1EE;
+  --diff-medium:#A9740F; --diff-medium-bg:#F6ECD8;
+  --diff-hard:#8C3B67; --diff-hard-bg:#F5E4EE;
+  --shadow:0 1px 2px rgba(23,32,36,0.08);
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Source Serif 4',Georgia,'Times New Roman',serif;
+  --font-mono:'JetBrains Mono','Fira Code',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1513;
+    --bg-grid:rgba(255,255,255,0.045);
+    --paper:#16201E;
+    --paper-border:#263431;
+    --ink:#E6EDE9;
+    --ink-soft:#9FB0AB;
+    --ink-faint:#617069;
+    --accent:#3FCDB8;
+    --accent-strong:#6EDFCC;
+    --accent-soft:rgba(63,205,184,0.14);
+    --nav-bg:#0A1211;
+    --nav-text:#B9C9C4;
+    --nav-text-dim:#5C6C66;
+    --nav-active:#16302C;
+    --code-bg:#0B1214;
+    --code-text:#DCE7E3;
+    --tok-comment:#6C8B84;
+    --tok-string:#8FCB9E;
+    --tok-keyword:#8FC0F5;
+    --tok-type:#E8C06E;
+    --tok-number:#E6A984;
+    --tok-preproc:#D3AEEF;
+    --tok-constant:#E8C06E;
+    --diff-easy:#3FCDB8; --diff-easy-bg:rgba(63,205,184,0.14);
+    --diff-medium:#D8A23F; --diff-medium-bg:rgba(216,162,63,0.14);
+    --diff-hard:#C7679B; --diff-hard-bg:rgba(199,103,155,0.14);
+    --shadow:0 1px 3px rgba(0,0,0,0.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1513;
+  --bg-grid:rgba(255,255,255,0.045);
+  --paper:#16201E;
+  --paper-border:#263431;
+  --ink:#E6EDE9;
+  --ink-soft:#9FB0AB;
+  --ink-faint:#617069;
+  --accent:#3FCDB8;
+  --accent-strong:#6EDFCC;
+  --accent-soft:rgba(63,205,184,0.14);
+  --nav-bg:#0A1211;
+  --nav-text:#B9C9C4;
+  --nav-text-dim:#5C6C66;
+  --nav-active:#16302C;
+  --code-bg:#0B1214;
+  --code-text:#DCE7E3;
+  --tok-comment:#6C8B84;
+  --tok-string:#8FCB9E;
+  --tok-keyword:#8FC0F5;
+  --tok-type:#E8C06E;
+  --tok-number:#E6A984;
+  --tok-preproc:#D3AEEF;
+  --tok-constant:#E8C06E;
+  --diff-easy:#3FCDB8; --diff-easy-bg:rgba(63,205,184,0.14);
+  --diff-medium:#D8A23F; --diff-medium-bg:rgba(216,162,63,0.14);
+  --diff-hard:#C7679B; --diff-hard-bg:rgba(199,103,155,0.14);
+  --shadow:0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* ============ RESET ============ */
+*,*::before,*::after{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  background-image:radial-gradient(var(--bg-grid) 1px,transparent 1px);
+  background-size:22px 22px;
+  color:var(--ink);
+  font-family:var(--font-body);
+  line-height:1.6;
+}
+a{color:var(--accent);}
+h1,h2,h3,h4{font-family:var(--font-display);color:var(--ink);line-height:1.25;margin:0 0 .5em;}
+p{margin:0 0 1em;}
+button{font-family:var(--font-display);cursor:pointer;}
+::selection{background:var(--accent-soft);}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important;}}
+
+/* ============ LAYOUT ============ */
+.app{display:flex;min-height:100vh;}
+.sidebar{
+  width:300px;flex-shrink:0;background:var(--nav-bg);color:var(--nav-text);
+  position:sticky;top:0;align-self:flex-start;height:100vh;overflow-y:auto;
+  padding:22px 16px 40px;
+}
+.main{flex:1;min-width:0;}
+.main-inner{max-width:720px;margin:0 auto;padding:52px 32px 100px;}
+.backdrop{display:none;}
+
+.menu-toggle{
+  display:none;position:fixed;top:14px;left:14px;z-index:60;
+  background:var(--nav-bg);color:var(--nav-text);border:1px solid var(--nav-active);
+  border-radius:8px;padding:9px 12px;font-size:14px;font-weight:600;box-shadow:var(--shadow);
+}
+
+@media (max-width:880px){
+  .sidebar{position:fixed;left:0;top:0;z-index:55;transform:translateX(-104%);transition:transform .25s ease;width:300px;max-width:82vw;}
+  .sidebar.open{transform:translateX(0);}
+  .menu-toggle{display:inline-flex;align-items:center;gap:6px;}
+  .main-inner{padding:76px 20px 80px;}
+  .backdrop.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:50;}
+}
+
+/* ============ SIDEBAR ============ */
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 18px;border-bottom:1px solid var(--nav-active);margin-bottom:16px;}
+.brand-mark{width:34px;height:34px;flex-shrink:0;}
+.brand-text{font-family:var(--font-display);font-weight:700;font-size:15px;color:#fff;line-height:1.15;}
+.brand-sub{font-size:11.5px;color:var(--nav-text-dim);margin-top:2px;}
+
+.overall-progress{padding:0 8px 18px;}
+.overall-progress .label{font-size:11.5px;color:var(--nav-text-dim);margin-bottom:6px;display:flex;justify-content:space-between;}
+.bar{height:5px;border-radius:3px;background:var(--nav-active);overflow:hidden;}
+.bar > span{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease;}
+
+.search-wrap{padding:0 8px 14px;}
+.search-wrap input{
+  width:100%;background:var(--nav-active);border:1px solid transparent;color:var(--nav-text);
+  padding:8px 10px;border-radius:7px;font-family:var(--font-body);font-size:13.5px;
+}
+.search-wrap input::placeholder{color:var(--nav-text-dim);}
+.search-wrap input:focus{border-color:var(--accent);}
+
+.home-link{
+  display:block;padding:9px 10px;margin:0 0 10px;border-radius:7px;font-family:var(--font-display);
+  font-size:13.5px;font-weight:600;color:var(--nav-text);text-decoration:none;
+}
+.home-link:hover,.home-link.active{background:var(--nav-active);color:#fff;}
+
+nav.chapters details{margin-bottom:3px;border-radius:8px;overflow:hidden;}
+nav.chapters summary{
+  list-style:none;display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;
+  font-family:var(--font-display);font-size:13.5px;font-weight:600;color:var(--nav-text);border-radius:7px;
+}
+nav.chapters summary:hover{background:var(--nav-active);}
+nav.chapters summary::-webkit-details-marker{display:none;}
+.chev{width:9px;height:9px;flex-shrink:0;border-right:1.6px solid var(--nav-text-dim);border-bottom:1.6px solid var(--nav-text-dim);transform:rotate(-45deg);transition:transform .18s ease;margin-left:1px;}
+details[open] > summary .chev{transform:rotate(45deg);}
+.chapter-title{flex:1;}
+.chapter-count{font-family:var(--font-mono);font-size:10.5px;color:var(--nav-text-dim);font-weight:400;}
+
+ul.exlist{list-style:none;margin:2px 0 10px;padding:0 0 0 27px;display:flex;flex-direction:column;gap:1px;}
+ul.exlist li a{
+  display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--nav-text-dim);
+  font-size:13px;padding:6px 8px;border-radius:6px;
+}
+ul.exlist li a:hover{background:var(--nav-active);color:var(--nav-text);}
+ul.exlist li a.active{background:var(--nav-active);color:#fff;}
+.dot{width:8px;height:8px;border-radius:50%;border:1.6px solid var(--nav-text-dim);flex-shrink:0;}
+ul.exlist li a.done .dot{background:var(--accent);border-color:var(--accent);}
+ul.exlist li a.active .dot{border-color:var(--accent);}
+.empty-note{padding:2px 0 10px 27px;font-size:12px;color:var(--nav-text-dim);font-style:italic;}
+
+/* ============ HERO / HOME ============ */
+.eyebrow{font-family:var(--font-mono);font-size:12.5px;color:var(--accent);letter-spacing:.02em;margin-bottom:10px;}
+.hero h1{font-size:35px;letter-spacing:-0.01em;}
+.hero p.lead{font-size:17.5px;color:var(--ink-soft);max-width:56ch;}
+.hero-diagram{margin:28px 0 8px;}
+.hero-diagram svg{width:100%;height:auto;display:block;}
+
+.callout{
+  background:var(--accent-soft);border:1px solid var(--paper-border);border-left:3px solid var(--accent);
+  border-radius:8px;padding:14px 16px;margin:20px 0;font-size:14.5px;color:var(--ink-soft);
+}
+.callout strong{color:var(--ink);}
+
+.chapter-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px;}
+@media (max-width:600px){.chapter-grid{grid-template-columns:1fr;}}
+.chapter-card{
+  display:block;text-decoration:none;background:var(--paper);border:1px solid var(--paper-border);
+  border-radius:10px;padding:16px 17px;box-shadow:var(--shadow);
+}
+.chapter-card:hover{border-color:var(--accent);}
+.chapter-card h3{font-size:15px;margin-bottom:5px;color:var(--ink);}
+.chapter-card p{font-size:13px;color:var(--ink-soft);margin:0 0 8px;line-height:1.5;}
+.chapter-card .meta{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+.chapter-card .meta.soon{color:var(--ink-faint);font-style:italic;}
+
+/* ============ CHAPTER PAGE ============ */
+.crumb{font-size:12.5px;color:var(--ink-faint);margin-bottom:14px;font-family:var(--font-display);}
+.crumb a{color:var(--ink-faint);text-decoration:none;}
+.crumb a:hover{color:var(--accent);}
+.chapter-head h1{font-size:28px;}
+.chapter-head p.desc{color:var(--ink-soft);font-size:16px;max-width:60ch;}
+.intro-block{margin:22px 0 6px;}
+.intro-block p{color:var(--ink-soft);}
+
+.ex-card-list{margin-top:22px;display:flex;flex-direction:column;gap:8px;}
+.ex-card{
+  display:flex;align-items:center;gap:12px;background:var(--paper);border:1px solid var(--paper-border);
+  border-radius:9px;padding:13px 15px;text-decoration:none;box-shadow:var(--shadow);
+}
+.ex-card:hover{border-color:var(--accent);}
+.ex-card .dot{width:9px;height:9px;}
+.ex-card .num{font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);width:20px;flex-shrink:0;}
+.ex-card .title{flex:1;font-family:var(--font-display);font-weight:600;font-size:14.5px;color:var(--ink);}
+.empty-chapter{
+  margin-top:22px;padding:22px 20px;border:1px dashed var(--paper-border);border-radius:10px;
+  color:var(--ink-faint);font-size:14.5px;font-style:italic;
+}
+
+/* ============ BADGES ============ */
+.badge{
+  display:inline-flex;align-items:center;font-family:var(--font-display);font-weight:600;font-size:11px;
+  padding:3px 9px;border-radius:20px;letter-spacing:.01em;
+}
+.badge.easy{color:var(--diff-easy);background:var(--diff-easy-bg);}
+.badge.medium{color:var(--diff-medium);background:var(--diff-medium-bg);}
+.badge.hard{color:var(--diff-hard);background:var(--diff-hard-bg);}
+
+/* ============ EXERCISE PAGE ============ */
+.ex-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
+.ex-head h1{font-size:25px;margin:0;flex:1;min-width:200px;}
+.statement{font-size:16.5px;color:var(--ink);margin:18px 0 24px;}
+.statement code{font-family:var(--font-mono);font-size:.87em;background:var(--accent-soft);padding:1px 5px;border-radius:4px;color:var(--accent-strong);}
+
+.done-toggle{
+  display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-size:12.5px;font-weight:600;
+  color:var(--ink-soft);background:var(--paper);border:1px solid var(--paper-border);border-radius:20px;padding:6px 12px 6px 8px;
+}
+.done-toggle input{width:15px;height:15px;accent-color:var(--accent);}
+.done-toggle.on{color:var(--accent-strong);border-color:var(--accent);}
+
+.section-label{font-family:var(--font-display);font-weight:600;font-size:12.5px;text-transform:none;color:var(--ink-faint);margin:26px 0 8px;letter-spacing:.01em;}
+
+/* code blocks */
+.code-block{background:var(--code-bg);border-radius:10px;overflow:hidden;margin:10px 0 6px;box-shadow:var(--shadow);}
+.code-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07);}
+.code-lang{font-family:var(--font-mono);font-size:11px;color:#8296a0;letter-spacing:.03em;}
+.copy-btn{background:transparent;border:1px solid rgba(255,255,255,.15);color:#c9d4d1;font-size:11px;font-weight:500;padding:4px 10px;border-radius:6px;font-family:var(--font-display);}
+.copy-btn:hover{border-color:rgba(255,255,255,.4);}
+.code-block pre{margin:0;padding:14px 16px;overflow-x:auto;}
+.code-block code{font-family:var(--font-mono);font-size:13px;line-height:1.65;color:var(--code-text);white-space:pre;}
+.code-block code[contenteditable]:focus {outline: none;} 
+.tok-comment{color:var(--tok-comment);font-style:italic;}
+.tok-string{color:var(--tok-string);}
+.tok-keyword{color:var(--tok-keyword);font-weight:600;}
+.tok-type{color:var(--tok-type);}
+.tok-number{color:var(--tok-number);}
+.tok-preproc{color:var(--tok-preproc);}
+.tok-constant{color:var(--tok-constant);}
+
+/* disclosures */
+details.disclosure{border:1px solid var(--paper-border);border-radius:10px;margin:10px 0;background:var(--paper);overflow:hidden;}
+details.disclosure summary{
+  list-style:none;padding:12px 15px;cursor:pointer;display:flex;align-items:center;gap:9px;
+  font-family:var(--font-display);font-weight:600;font-size:13.5px;color:var(--ink);
+}
+details.disclosure summary::-webkit-details-marker{display:none;}
+details.disclosure summary .plus{width:16px;height:16px;flex-shrink:0;position:relative;}
+details.disclosure summary .plus::before,details.disclosure summary .plus::after{content:"";position:absolute;background:var(--accent);border-radius:1px;}
+details.disclosure summary .plus::before{width:12px;height:2px;top:7px;left:2px;}
+details.disclosure summary .plus::after{width:2px;height:12px;top:2px;left:7px;transition:transform .15s ease;}
+details.disclosure[open] summary .plus::after{transform:scaleY(0);}
+details.disclosure .disclosure-body{padding:0 16px 16px;font-size:15px;color:var(--ink-soft);}
+details.disclosure.hint summary{color:var(--ink-soft);font-size:13px;}
+details.disclosure.solution summary{color:var(--accent-strong);}
+
+.hint-group{display:flex;flex-direction:column;gap:6px;margin:10px 0 4px;}
+
+.ex-nav{display:flex;justify-content:space-between;gap:12px;margin-top:38px;padding-top:20px;border-top:1px solid var(--paper-border);}
+.ex-nav a{
+  flex:1;text-decoration:none;color:var(--ink-soft);font-size:13px;border:1px solid var(--paper-border);
+  border-radius:9px;padding:11px 13px;background:var(--paper);
+}
+.ex-nav a:hover{border-color:var(--accent);}
+.ex-nav a .dir{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-faint);margin-bottom:3px;}
+.ex-nav a.next{text-align:right;margin-left:auto;}
+.ex-nav a.placeholder{visibility:hidden;}
+
+footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:var(--ink-faint);font-size:12.5px;text-align:center;}
+
+/* theme toggle */
+.theme-toggle{
+  position:fixed;bottom:16px;right:16px;z-index:40;background:var(--paper);border:1px solid var(--paper-border);
+  color:var(--ink-soft);border-radius:20px;padding:8px 13px;font-size:12px;font-family:var(--font-display);
+  font-weight:600;box-shadow:var(--shadow);display:flex;align-items:center;gap:6px;
+}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle" aria-label="Ouvrir la navigation">☰ Chapitres</button>
+<div class="backdrop" id="backdrop"></div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none">
+        <rect x="3" y="9" width="14" height="10" rx="2" stroke="#3FCDB8" stroke-width="2"/>
+        <rect x="23" y="21" width="14" height="10" rx="2" stroke="#3FCDB8" stroke-width="2"/>
+        <path d="M17 14h4a2 2 0 0 1 2 2v3" stroke="#3FCDB8" stroke-width="2" fill="none"/>
+        <path d="M23 26h-4a2 2 0 0 1-2-2v-3" stroke="#3FCDB8" stroke-width="2" fill="none" opacity="0"/>
+        <circle cx="30" cy="12" r="1.6" fill="#3FCDB8"/>
+        <path d="M23 19l5-5" stroke="#3FCDB8" stroke-width="1.4" stroke-dasharray="2 2"/>
+      </svg>
+      <div>
+        <div class="brand-text">Exercices C</div>
+        <div class="brand-sub">Programme MPI</div>
+      </div>
+    </div>
+
+    <div class="overall-progress">
+      <div class="label"><span>Progression</span><span id="overallCount">0 / 0</span></div>
+      <div class="bar"><span id="overallBar" style="width:0%"></span></div>
+    </div>
+
+    <div class="search-wrap">
+      <input type="search" id="searchInput" placeholder="Rechercher un exercice…" autocomplete="off">
+    </div>
+
+    <a href="#" class="home-link" id="homeLink">Accueil</a>
+    <nav class="chapters" id="chaptersNav"></nav>
+  </aside>
+
+  <main class="main">
+    <div class="main-inner" id="mainInner"></div>
+    <footer class="sitefoot">Site créé pour réviser l'algorithmique et le C du programme MPI — contenu ajouté au fil de l'eau.</footer>
+  </main>
+</div>
+
+<button class="theme-toggle" id="themeToggle">🌓 Auto</button>
+
+<script>
+/* ============================================================
+   UTILITAIRES
+   ============================================================ */
+function escapeHtml(s){
+  return s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+const KEYWORDS = new Set(['if','else','while','for','do','return','break','continue','switch','case','default','struct','typedef','sizeof','goto']);
+const TYPES = new Set(['int','char','float','double','long','short','unsigned','signed','void','static','const','extern','maillon','liste','size_t']);
+const CONSTANTS = new Set(['NULL']);
+
+function highlightC(code){
+  const escaped = escapeHtml(code);
+  const re = /(\/\/[^\n]*)|(\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*")|('(?:\\.|[^'\\])')|(#\s*\w+[^\n]*)|(\b\d+\b)|([A-Za-z_]\w*)/g;
+  return escaped.replace(re, function(match, comment, block, str, ch, preproc, num, ident){
+    if (comment || block) return '<span class="tok-comment">' + match + '</span>';
+    if (str || ch) return '<span class="tok-string">' + match + '</span>';
+    if (preproc) return '<span class="tok-preproc">' + match + '</span>';
+    if (num) return '<span class="tok-number">' + match + '</span>';
+    if (ident){
+      if (KEYWORDS.has(ident)) return '<span class="tok-keyword">' + match + '</span>';
+      if (TYPES.has(ident)) return '<span class="tok-type">' + match + '</span>';
+      if (CONSTANTS.has(ident)) return '<span class="tok-constant">' + match + '</span>';
+      return match;
+    }
+    return match;
+  });
+}
+
+function codeBlock(raw, id){
+  return '<div class="code-block">' +
+    '<div class="code-bar"><span class="code-lang">c</span><button class="copy-btn" data-copy="' + id + '">Copier</button></div>' +
+    '<pre><code class="hl" id="' + id + '" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off">' + highlightC(raw) + '</code></pre></div>';
+}
+
+function allExercises(){
+  const out = [];
+  COURSE.forEach(ch => ch.exercises.forEach(ex => out.push({chapter: ch, ex: ex})));
+  return out;
+}
+
+/* ============================================================
+   DONNÉES DU COURS — ajouter des chapitres / exercices ici
+   ============================================================ */
+const STRUCT_INTRO = `<p>Dans ce chapitre, on utilise la structure de maillon suivante pour représenter une liste chaînée d'entiers. Une liste vide est représentée par le pointeur <code>NULL</code>.</p>`;
+const STRUCT_CODE = `typedef struct maillon {
+    int valeur;
+    struct maillon *suivant;
+} maillon;
+
+typedef maillon *liste;`;
+
+const COURSE = [
+  {
+    id: "bases-c",
+    title: "Bases du langage C",
+    description: "Variables, types, opérateurs, boucles, fonctions, compilation avec gcc.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "tableaux",
+    title: "Tableaux et chaînes",
+    description: "Tableaux statiques, parcours, algorithmes classiques, chaînes de caractères.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "recursivite",
+    title: "Récursivité",
+    description: "Fonctions récursives, terminaison, pile d'appels, diviser pour régner.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "complexite",
+    title: "Complexité algorithmique",
+    description: "Analyse du temps et de l'espace, notations O, Θ, Ω, comparaison d'algorithmes.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "listes-chainees",
+    title: "Listes chaînées",
+    description: "Création, parcours, insertion, suppression, inversion, fusion et détection de cycle.",
+    structCode: STRUCT_CODE, /* ICI : On associe la structure au chapitre */
+    intro: STRUCT_INTRO + codeBlock(STRUCT_CODE, "code-struct-intro") + `<div class="callout"><strong>Compiler ces exercices :</strong> ce site n'exécute pas le code — il sert à s'entraîner et à consulter des corrigés. Pour tester une solution, copiez-la dans un fichier <code>.c</code> avec la structure ci-dessus, <code>#include &lt;stdio.h&gt;</code> et <code>#include &lt;stdlib.h&gt;</code>, ajoutez un <code>main</code>, puis compilez avec <code>gcc -Wall fichier.c -o prog</code>.</div>`,
+    exercises: [
+      {
+        id: "creer-maillon",
+        title: "Créer un maillon",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>maillon *creer_maillon(int v, maillon *suiv)</code> qui alloue dynamiquement un nouveau maillon contenant la valeur <code>v</code>, dont le champ <code>suivant</code> pointe vers <code>suiv</code>, et qui renvoie un pointeur vers ce maillon. On ne se préoccupe pas ici des erreurs d'allocation.`,
+        starter: `maillon *creer_maillon(int v, maillon *suiv) {
+    // à compléter
+}`,
+        hints: [
+          "Pensez à malloc et à la taille à allouer : sizeof(maillon).",
+          "N'oubliez pas de renseigner les deux champs de la structure avant de renvoyer le pointeur."
+        ],
+        solution: `maillon *creer_maillon(int v, maillon *suiv) {
+    maillon *m = malloc(sizeof(maillon));
+    m->valeur = v;
+    m->suivant = suiv;
+    return m;
+}`
+      },
+      {
+        id: "longueur-iterative",
+        title: "Longueur d'une liste (itérative)",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>int longueur(liste l)</code> qui renvoie le nombre de maillons de la liste <code>l</code>, sans récursivité.`,
+        starter: `int longueur(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Utilisez une variable compteur et un pointeur qui avance de maillon en maillon.",
+          "La boucle s'arrête quand le pointeur courant vaut NULL."
+        ],
+        solution: `int longueur(liste l) {
+    int n = 0;
+    while (l != NULL) {
+        n++;
+        l = l->suivant;
+    }
+    return n;
+}`
+      },
+      {
+        id: "longueur-recursive",
+        title: "Longueur d'une liste (récursive)",
+        difficulty: "facile",
+        statement: `Écrire une version récursive de la fonction précédente : <code>int longueur_rec(liste l)</code>.`,
+        starter: `int longueur_rec(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Quel est le résultat pour une liste vide ? C'est le cas de base.",
+          "Comment exprimer la longueur d'une liste non vide en fonction de la longueur de l->suivant ?"
+        ],
+        solution: `int longueur_rec(liste l) {
+    if (l == NULL)
+        return 0;
+    return 1 + longueur_rec(l->suivant);
+}`
+      },
+      {
+        id: "affichage",
+        title: "Afficher une liste",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>void afficher(liste l)</code> qui affiche les valeurs de la liste séparées par des espaces, suivies d'un retour à la ligne, par exemple : <code>3 7 1 9</code>`,
+        starter: `void afficher(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Utilisez printf(\"%d \", ...) pour chaque valeur pendant le parcours.",
+          "Affichez un '\\n' final après la boucle."
+        ],
+        solution: `void afficher(liste l) {
+    while (l != NULL) {
+        printf("%d ", l->valeur);
+        l = l->suivant;
+    }
+    printf("\\n");
+}`
+      },
+      {
+        id: "somme",
+        title: "Somme des éléments",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>int somme(liste l)</code> qui renvoie la somme des valeurs de la liste <code>l</code> (0 pour la liste vide).`,
+        starter: `int somme(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "C'est très proche du calcul de la longueur : remplacez le compteur par un accumulateur."
+        ],
+        solution: `int somme(liste l) {
+    int s = 0;
+    while (l != NULL) {
+        s += l->valeur;
+        l = l->suivant;
+    }
+    return s;
+}`
+      },
+      {
+        id: "appartient",
+        title: "Appartenance d'une valeur",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>int appartient(int v, liste l)</code> qui renvoie 1 si la valeur <code>v</code> apparaît dans la liste <code>l</code>, et 0 sinon.`,
+        starter: `int appartient(int v, liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Parcourez la liste en comparant chaque valeur à v.",
+          "Dès qu'une valeur correspond, renvoyez 1 immédiatement sans attendre la fin du parcours."
+        ],
+        solution: `int appartient(int v, liste l) {
+    while (l != NULL) {
+        if (l->valeur == v)
+            return 1;
+        l = l->suivant;
+    }
+    return 0;
+}`
+      },
+      {
+        id: "inserer-tete",
+        title: "Insertion en tête",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>liste inserer_tete(int v, liste l)</code> qui renvoie une nouvelle liste obtenue en ajoutant un maillon de valeur <code>v</code> au début de <code>l</code>, en O(1).`,
+        starter: `liste inserer_tete(int v, liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Cette fonction ressemble beaucoup à creer_maillon.",
+          "Pas besoin de parcourir la liste : la complexité doit être constante."
+        ],
+        solution: `liste inserer_tete(int v, liste l) {
+    return creer_maillon(v, l);
+}`
+      },
+      {
+        id: "liberer",
+        title: "Libérer une liste",
+        difficulty: "facile",
+        statement: `Écrire une fonction <code>void liberer(liste l)</code> qui libère tous les maillons de la liste <code>l</code> (pour éviter les fuites mémoire).`,
+        starter: `void liberer(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Il faut sauvegarder le maillon suivant avant de free() le maillon courant, sinon on perd l'accès au reste de la liste."
+        ],
+        solution: `void liberer(liste l) {
+    while (l != NULL) {
+        maillon *suite = l->suivant;
+        free(l);
+        l = suite;
+    }
+}`
+      },
+      {
+        id: "inserer-fin",
+        title: "Insertion en fin",
+        difficulty: "moyen",
+        statement: `Écrire une fonction <code>liste inserer_fin(int v, liste l)</code> qui ajoute un maillon de valeur <code>v</code> à la fin de la liste <code>l</code> et renvoie la liste résultante.`,
+        starter: `liste inserer_fin(int v, liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Traitez d'abord le cas où l est vide (NULL) : la fonction doit alors renvoyer un unique maillon.",
+          "Sinon, parcourez la liste jusqu'au dernier maillon (celui dont le champ suivant vaut NULL) avec un pointeur auxiliaire, sans perdre le début de la liste.",
+          "Accrochez le nouveau maillon au champ suivant de ce dernier maillon."
+        ],
+        solution: `liste inserer_fin(int v, liste l) {
+    if (l == NULL)
+        return creer_maillon(v, NULL);
+    maillon *p = l;
+    while (p->suivant != NULL)
+        p = p->suivant;
+    p->suivant = creer_maillon(v, NULL);
+    return l;
+}`
+      },
+      {
+        id: "supprimer",
+        title: "Supprimer une valeur",
+        difficulty: "moyen",
+        statement: `Écrire une fonction <code>liste supprimer(int v, liste l)</code> qui supprime la première occurrence de la valeur <code>v</code> dans <code>l</code> (s'il en existe une), libère le maillon correspondant, et renvoie la liste résultante.`,
+        starter: `liste supprimer(int v, liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Le cas où c'est le premier maillon qui doit être supprimé est particulier : il faut alors renvoyer l->suivant.",
+          "Pour les maillons suivants, gardez un pointeur vers le maillon précédent afin de recoller la chaîne avant de free() le maillon retiré.",
+          "N'oubliez pas free() pour éviter une fuite mémoire, et de ne rien faire si la valeur n'est pas présente."
+        ],
+        solution: `liste supprimer(int v, liste l) {
+    if (l == NULL)
+        return NULL;
+    if (l->valeur == v) {
+        maillon *suite = l->suivant;
+        free(l);
+        return suite;
+    }
+    maillon *prec = l;
+    while (prec->suivant != NULL && prec->suivant->valeur != v)
+        prec = prec->suivant;
+    if (prec->suivant != NULL) {
+        maillon *a_supprimer = prec->suivant;
+        prec->suivant = a_supprimer->suivant;
+        free(a_supprimer);
+    }
+    return l;
+}`
+      },
+      {
+        id: "inverser-iteratif",
+        title: "Inverser une liste (itératif)",
+        difficulty: "moyen",
+        statement: `Écrire une fonction <code>liste inverser(liste l)</code> qui renvoie la liste inversée, en itératif et en O(1) d'espace supplémentaire (on réutilise les maillons existants, sans en recréer).`,
+        starter: `liste inverser(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Il faut retourner les flèches « suivant » une par une : gardez trois pointeurs (précédent, courant, suivant) et avancez-les de concert.",
+          "Sauvegardez courant->suivant avant de l'écraser, sinon vous perdez le reste de la liste."
+        ],
+        solution: `liste inverser(liste l) {
+    maillon *prec = NULL;
+    maillon *courant = l;
+    while (courant != NULL) {
+        maillon *suite = courant->suivant;
+        courant->suivant = prec;
+        prec = courant;
+        courant = suite;
+    }
+    return prec;
+}`
+      },
+      {
+        id: "milieu",
+        title: "Milieu de la liste",
+        difficulty: "moyen",
+        statement: `Écrire une fonction <code>maillon *milieu(liste l)</code> qui renvoie un pointeur vers le maillon du milieu de la liste, en un seul parcours (si la longueur est paire, on renvoie le second des deux maillons centraux).`,
+        starter: `maillon *milieu(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Utilisez deux pointeurs partant du début : un « lent » qui avance d'un maillon à la fois, un « rapide » qui avance de deux maillons à la fois.",
+          "Quand le pointeur rapide atteint la fin de la liste, le pointeur lent est au milieu."
+        ],
+        solution: `maillon *milieu(liste l) {
+    maillon *lent = l;
+    maillon *rapide = l;
+    while (rapide != NULL && rapide->suivant != NULL) {
+        lent = lent->suivant;
+        rapide = rapide->suivant->suivant;
+    }
+    return lent;
+}`
+      },
+      {
+        id: "inverser-recursif",
+        title: "Inverser une liste (récursif)",
+        difficulty: "difficile",
+        statement: `Écrire une version récursive de l'inversion : <code>liste inverser_rec(liste l)</code>.`,
+        starter: `liste inverser_rec(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Cas de base : une liste vide ou réduite à un seul maillon est sa propre inversée.",
+          "Inversez récursivement l->suivant, puis raccrochez l à la fin de cette liste inversée.",
+          "Pensez à couper l->suivant (le mettre à NULL) après l'avoir raccroché, sinon vous créez un cycle."
+        ],
+        solution: `liste inverser_rec(liste l) {
+    if (l == NULL || l->suivant == NULL)
+        return l;
+    liste reste = inverser_rec(l->suivant);
+    l->suivant->suivant = l;
+    l->suivant = NULL;
+    return reste;
+}`
+      },
+      {
+        id: "fusionner",
+        title: "Fusionner deux listes triées",
+        difficulty: "difficile",
+        statement: `On suppose que <code>l1</code> et <code>l2</code> sont deux listes triées par ordre croissant. Écrire une fonction <code>liste fusionner(liste l1, liste l2)</code> qui renvoie une liste triée contenant tous les éléments de <code>l1</code> et <code>l2</code>, en réutilisant les maillons existants (sans allocation).`,
+        starter: `liste fusionner(liste l1, liste l2) {
+    // à compléter
+}`,
+        hints: [
+          "Traitez d'abord les cas où l'une des deux listes est vide.",
+          "Comparez les deux têtes, choisissez la plus petite comme tête du résultat, puis fusionnez récursivement le reste.",
+          "Une version récursive tient en quelques lignes ; une version itérative demande de garder un pointeur vers le dernier maillon déjà placé."
+        ],
+        solution: `liste fusionner(liste l1, liste l2) {
+    if (l1 == NULL)
+        return l2;
+    if (l2 == NULL)
+        return l1;
+    if (l1->valeur <= l2->valeur) {
+        l1->suivant = fusionner(l1->suivant, l2);
+        return l1;
+    } else {
+        l2->suivant = fusionner(l1, l2->suivant);
+        return l2;
+    }
+}`
+      },
+      {
+        id: "cycle",
+        title: "Détecter un cycle (Floyd)",
+        difficulty: "difficile",
+        statement: `Écrire une fonction <code>int a_un_cycle(liste l)</code> qui renvoie 1 si la liste contient un cycle (en suivant les pointeurs <code>suivant</code>, on peut revenir à un maillon déjà visité), et 0 sinon — en O(1) d'espace supplémentaire (algorithme du lièvre et de la tortue).`,
+        starter: `int a_un_cycle(liste l) {
+    // à compléter
+}`,
+        hints: [
+          "Reprenez l'idée des deux pointeurs de l'exercice « milieu », mais on s'intéresse cette fois à savoir s'ils se rencontrent.",
+          "S'il n'y a pas de cycle, le pointeur rapide finit par atteindre NULL.",
+          "S'il y a un cycle, le pointeur rapide finit toujours par « rattraper » le pointeur lent : testez l'égalité à chaque étape."
+        ],
+        solution: `int a_un_cycle(liste l) {
+    maillon *lent = l;
+    maillon *rapide = l;
+    while (rapide != NULL && rapide->suivant != NULL) {
+        lent = lent->suivant;
+        rapide = rapide->suivant->suivant;
+        if (lent == rapide)
+            return 1;
+    }
+    return 0;
+}`
+      }
+    ]
+  },
+  {
+    id: "piles-files",
+    title: "Piles et files",
+    description: "Implémentation par tableau ou par liste chaînée, applications (parenthésage, parcours largeur...).",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "arbres",
+    title: "Arbres binaires",
+    description: "Structures récursives, parcours (préfixe, infixe, postfixe, largeur), arbres binaires de recherche.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "tri-recherche",
+    title: "Tri et recherche",
+    description: "Tri par insertion, fusion, rapide ; recherche séquentielle et dichotomique.",
+    intro: "",
+    exercises: []
+  },
+  {
+    id: "graphes",
+    title: "Graphes",
+    description: "Représentations (matrice, listes d'adjacence), parcours en profondeur et en largeur.",
+    intro: "",
+    exercises: []
+  }
+];
+
+/* ============================================================
+   PROGRESSION (localStorage, par visiteur)
+   ============================================================ */
+const PROGRESS_KEY = 'exercices-c-mpi-progress';
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveProgress(p){
+  try{ localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); }catch(e){}
+}
+let progress = loadProgress();
+function exKey(chapterId, exId){ return chapterId + '/' + exId; }
+function isDone(chapterId, exId){ return !!progress[exKey(chapterId, exId)]; }
+function setDone(chapterId, exId, val){
+  const k = exKey(chapterId, exId);
+  if (val) progress[k] = true; else delete progress[k];
+  saveProgress(progress);
+  updateProgressUI();
+}
+function updateProgressUI(){
+  const total = allExercises().length;
+  const done = Object.keys(progress).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const countEl = document.getElementById('overallCount');
+  const barEl = document.getElementById('overallBar');
+  if (countEl) countEl.textContent = done + ' / ' + total;
+  if (barEl) barEl.style.width = pct + '%';
+  COURSE.forEach(ch => {
+    const el = document.querySelector('[data-chapter-count="' + ch.id + '"]');
+    if (el && ch.exercises.length){
+      const d = ch.exercises.filter(ex => isDone(ch.id, ex.id)).length;
+      el.textContent = d + '/' + ch.exercises.length;
+    }
+    ch.exercises.forEach(ex => {
+      const link = document.querySelector('[data-nav-ex="' + ch.id + '/' + ex.id + '"]');
+      if (link) link.classList.toggle('done', isDone(ch.id, ex.id));
+    });
+  });
+}
+
+/* ============================================================
+   NAVIGATION LATÉRALE
+   ============================================================ */
+const openChapters = new Set();
+
+function renderSidebar(activeChapterId, activeExId, filter){
+  if (activeChapterId) openChapters.add(activeChapterId);
+  const nav = document.getElementById('chaptersNav');
+  const q = (filter || '').trim().toLowerCase();
+  nav.innerHTML = COURSE.map(ch => {
+    const matchingEx = ch.exercises.filter(ex => !q || ex.title.toLowerCase().includes(q) || ch.title.toLowerCase().includes(q));
+    if (q && matchingEx.length === 0 && !ch.title.toLowerCase().includes(q)) return '';
+    const isOpen = openChapters.has(ch.id) || (q && matchingEx.length > 0);
+    const doneCount = ch.exercises.filter(ex => isDone(ch.id, ex.id)).length;
+    const countLabel = ch.exercises.length ? (doneCount + '/' + ch.exercises.length) : '—';
+    let body;
+    if (ch.exercises.length === 0){
+      body = '<div class="empty-note">Bientôt disponible</div>';
+    } else {
+      body = '<ul class="exlist">' + matchingEx.map(ex => {
+        const active = (ch.id === activeChapterId && ex.id === activeExId) ? ' active' : '';
+        const done = isDone(ch.id, ex.id) ? ' done' : '';
+        return '<li><a href="#' + ch.id + '/' + ex.id + '" data-nav-ex="' + ch.id + '/' + ex.id + '" class="' + active + done + '"><span class="dot"></span>' + ex.title + '</a></li>';
+      }).join('') + '</ul>';
+    }
+    return '<details' + (isOpen ? ' open' : '') + ' data-chapter="' + ch.id + '">' +
+      '<summary><span class="chev"></span><span class="chapter-title">' + ch.title + '</span><span class="chapter-count" data-chapter-count="' + ch.id + '">' + countLabel + '</span></summary>' +
+      body + '</details>';
+  }).join('');
+
+  nav.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if (d.open) openChapters.add(d.dataset.chapter);
+      else openChapters.delete(d.dataset.chapter);
+    });
+  });
+
+  document.getElementById('homeLink').classList.toggle('active', !activeChapterId);
+}
+
+/* ============================================================
+   VUES
+   ============================================================ */
+function heroSvg(){
+  return '<div class="hero-diagram"><svg viewBox="0 0 640 120" xmlns="http://www.w3.org/2000/svg">' +
+    [0,1,2].map(i => {
+      const x = 20 + i*190;
+      return '<g>' +
+        '<rect x="' + x + '" y="30" width="60" height="44" rx="4" fill="none" stroke="var(--accent)" stroke-width="2"/>' +
+        '<line x1="' + (x+40) + '" y1="30" x2="' + (x+40) + '" y2="74" stroke="var(--accent)" stroke-width="2"/>' +
+        '<text x="' + (x+20) + '" y="57" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="15" fill="var(--ink)">' + (i===0?3:i===1?7:1) + '</text>' +
+        '<path d="M' + (x+60) + ' 52 h' + (130-60) + '" stroke="var(--accent)" stroke-width="2" fill="none" marker-end="url(#arrow)"/>' +
+        '</g>';
+    }).join('') +
+    '<rect x="590" y="30" width="34" height="44" rx="4" fill="none" stroke="var(--ink-faint)" stroke-width="2" stroke-dasharray="3 3"/>' +
+    '<text x="607" y="57" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-faint)">NULL</text>' +
+    '<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="var(--accent)"/></marker></defs>' +
+    '</svg></div>';
+}
+
+function renderHome(){
+  const total = allExercises().length;
+  const chaptersHtml = COURSE.map(ch => {
+    const soon = ch.exercises.length === 0;
+    return '<a class="chapter-card" href="#' + ch.id + '">' +
+      '<h3>' + ch.title + '</h3>' +
+      '<p>' + ch.description + '</p>' +
+      '<div class="meta' + (soon ? ' soon' : '') + '">' + (soon ? 'Bientôt disponible' : ch.exercises.length + ' exercice' + (ch.exercises.length>1?'s':'')) + '</div>' +
+      '</a>';
+  }).join('');
+
+  document.getElementById('mainInner').innerHTML =
+    '<div class="hero">' +
+      '<div class="eyebrow">Informatique — MPI</div>' +
+      '<h1>Exercices de programmation en C</h1>' +
+      '<p class="lead">Un entraînement structuré selon le programme d’informatique de MPI, avec pour l’instant un focus sur les listes chaînées : énoncés, indices progressifs et corrigés commentés.</p>' +
+      heroSvg() +
+    '</div>' +
+    '<div class="callout"><strong>' + total + ' exercices disponibles</strong> pour le moment, et d’autres chapitres arrivent au fur et à mesure. Cliquez sur un chapitre ci-dessous ou dans le menu de gauche.</div>' +
+    '<div class="chapter-grid">' + chaptersHtml + '</div>';
+}
+
+function difficultyBadge(diff){
+  const cls = diff === 'facile' ? 'easy' : diff === 'moyen' ? 'medium' : 'hard';
+  return '<span class="badge ' + cls + '">' + diff + '</span>';
+}
+
+function renderChapter(ch){
+  let body;
+  if (ch.exercises.length === 0){
+    body = '<div class="empty-chapter">Aucun exercice dans ce chapitre pour l’instant. D’autres exercices seront ajoutés prochainement.</div>';
+  } else {
+    body = '<div class="ex-card-list">' + ch.exercises.map((ex,i) => {
+      const done = isDone(ch.id, ex.id);
+      return '<a class="ex-card" href="#' + ch.id + '/' + ex.id + '">' +
+        '<span class="num">' + String(i+1).padStart(2,'0') + '</span>' +
+        '<span class="title">' + ex.title + '</span>' +
+        difficultyBadge(ex.difficulty) +
+        '<span class="dot" style="' + (done ? 'background:var(--accent);border-color:var(--accent)' : '') + '"></span>' +
+        '</a>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / ' + ch.title + '</div>' +
+    '<div class="chapter-head"><h1>' + ch.title + '</h1><p class="desc">' + ch.description + '</p></div>' +
+    (ch.intro ? '<div class="intro-block">' + ch.intro + '</div>' : '') +
+    body;
+  wireCopyButtons();
+}
+
+function renderExercise(ch, ex){
+  const idx = ch.exercises.findIndex(e => e.id === ex.id);
+  const prev = ch.exercises[idx-1];
+  const next = ch.exercises[idx+1];
+  const done = isDone(ch.id, ex.id);
+
+  const hintsHtml = ex.hints && ex.hints.length ? (
+    '<div class="section-label">Indices</div><div class="hint-group">' +
+    ex.hints.map((h,i) => '<details class="disclosure hint"><summary><span class="plus"></span>Indice ' + (i+1) + '</summary><div class="disclosure-body">' + h + '</div></details>').join('') +
+    '</div>'
+  ) : '';
+
+  /* ICI : Création automatique de la section "Structure utilisée" si le chapitre a une propriété structCode */
+  const structHtml = ch.structCode ? '<div class="section-label">Structure utilisée</div>' + codeBlock(ch.structCode, 'code-struct-' + ex.id) : '';
+
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / <a href="#' + ch.id + '">' + ch.title + '</a> / ' + ex.title + '</div>' +
+    '<div class="ex-head"><h1>' + ex.title + '</h1>' + difficultyBadge(ex.difficulty) + '</div>' +
+    '<label class="done-toggle' + (done ? ' on' : '') + '" id="doneToggle"><input type="checkbox" id="doneCheckbox" ' + (done?'checked':'') + '> Marquer comme terminé</label>' +
+    '<div class="statement">' + ex.statement + '</div>' +
+    structHtml + /* Insertion de la structure juste avant le squelette */
+    '<div class="section-label">Squelette</div>' +
+    codeBlock(ex.starter, 'code-starter') +
+    hintsHtml +
+    '<details class="disclosure solution"><summary><span class="plus"></span>Voir la solution</summary><div class="disclosure-body">' + codeBlock(ex.solution, 'code-solution') + '</div></details>' +
+    '<div class="ex-nav">' +
+      (prev ? '<a class="prev" href="#' + ch.id + '/' + prev.id + '"><span class="dir">← Précédent</span>' + prev.title + '</a>' : '<a class="placeholder">.</a>') +
+      (next ? '<a class="next" href="#' + ch.id + '/' + next.id + '"><span class="dir">Suivant →</span>' + next.title + '</a>' : '<a class="placeholder next">.</a>') +
+    '</div>';
+
+  document.getElementById('doneCheckbox').addEventListener('change', function(){
+    setDone(ch.id, ex.id, this.checked);
+    document.getElementById('doneToggle').classList.toggle('on', this.checked);
+  });
+  wireCopyButtons();
+}
+
+function wireCopyButtons(){
+  document.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.addEventListener('click', function(){
+      const id = btn.getAttribute('data-copy');
+      const codeEl = document.getElementById(id);
+      if (!codeEl) return;
+      const text = codeEl.innerText;
+      const done = () => { btn.textContent = 'Copié !'; setTimeout(() => btn.textContent = 'Copier', 1400); };
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+  });
+}
+function fallbackCopy(text, cb){
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    cb();
+  }catch(e){}
+}
+
+/* ============================================================
+   ROUTAGE
+   ============================================================ */
+function route(){
+  const hash = location.hash.replace(/^#/, '');
+  const [chapterId, exId] = hash.split('/');
+  const ch = COURSE.find(c => c.id === chapterId);
+  if (!ch){
+    renderSidebar(null, null, document.getElementById('searchInput').value);
+    renderHome();
+  } else {
+    const ex = exId ? ch.exercises.find(e => e.id === exId) : null;
+    renderSidebar(ch.id, ex ? ex.id : null, document.getElementById('searchInput').value);
+    if (ex) renderExercise(ch, ex);
+    else renderChapter(ch);
+  }
+  updateProgressUI();
+  window.scrollTo(0,0);
+  closeMobileSidebar();
+}
+
+window.addEventListener('hashchange', route);
+
+/* ============================================================
+   RECHERCHE
+   ============================================================ */
+document.getElementById('searchInput').addEventListener('input', function(){
+  const hash = location.hash.replace(/^#/, '');
+  const [chapterId, exId] = hash.split('/');
+  renderSidebar(chapterId || null, exId || null, this.value);
+});
+
+/* ============================================================
+   MENU MOBILE
+   ============================================================ */
+const sidebarEl = document.getElementById('sidebar');
+const backdropEl = document.getElementById('backdrop');
+function openMobileSidebar(){ sidebarEl.classList.add('open'); backdropEl.classList.add('open'); }
+function closeMobileSidebar(){ sidebarEl.classList.remove('open'); backdropEl.classList.remove('open'); }
+document.getElementById('menuToggle').addEventListener('click', openMobileSidebar);
+backdropEl.addEventListener('click', closeMobileSidebar);
+
+/* ============================================================
+   THÈME (auto / clair / sombre)
+   ============================================================ */
+const THEME_KEY = 'exercices-c-mpi-theme';
+function applyThemeLabel(){
+  const saved = document.documentElement.getAttribute('data-theme');
+  const btn = document.getElementById('themeToggle');
+  if (saved === 'light') btn.textContent = '☀️ Clair';
+  else if (saved === 'dark') btn.textContent = '🌙 Sombre';
+  else btn.textContent = '🌓 Auto';
+}
+try{
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+}catch(e){}
+document.getElementById('themeToggle').addEventListener('click', function(){
+  const current = document.documentElement.getAttribute('data-theme');
+  const nextTheme = current === null ? 'light' : current === 'light' ? 'dark' : null;
+  if (nextTheme === null) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', nextTheme);
+  try{
+    if (nextTheme === null) localStorage.removeItem(THEME_KEY);
+    else localStorage.setItem(THEME_KEY, nextTheme);
+  }catch(e){}
+  applyThemeLabel();
+});
+applyThemeLabel();
+
+/* ============================================================
+   INITIALISATION
+   ============================================================ */
+route();
+
+/* ============================================================
+   ÉDITION DE CODE (Gestion de la tabulation)
+   ============================================================ */
+document.addEventListener('keydown', function(e) {
+  if (e.target && e.target.tagName === 'CODE' && e.target.isContentEditable) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      // Insère 4 espaces à l'emplacement du curseur
+      document.execCommand('insertText', false, '    ');
+    }
+  }
+});
+</script>
+</body>
+</html>
