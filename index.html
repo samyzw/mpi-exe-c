@@ -316,6 +316,23 @@ details.disclosure.solution summary{color:var(--accent-strong);}
 
 footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:var(--ink-faint);font-size:12.5px;text-align:center;}
 
+/* tabs */
+.tabs{display:flex;gap:4px;margin:0 0 16px;background:var(--nav-active);padding:4px;border-radius:9px;}
+.tab-btn{flex:1;text-align:center;padding:7px 0;border-radius:6px;font-family:var(--font-display);font-weight:600;font-size:12.5px;color:var(--nav-text-dim);text-decoration:none;}
+.tab-btn.active{background:var(--accent);color:#08201c;}
+.tab-btn:hover:not(.active){color:var(--nav-text);}
+
+/* algo subtitle + tables */
+.subtitle-meta{font-family:var(--font-display);font-size:12.5px;color:var(--accent-strong);background:var(--accent-soft);display:inline-block;padding:4px 10px;border-radius:20px;margin:0 0 16px;font-weight:600;}
+.ex-card .subtitle{display:block;font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--ink-faint);margin-top:2px;}
+.table-wrap{overflow-x:auto;margin:14px 0;}
+.dist-table{border-collapse:collapse;font-family:var(--font-mono);font-size:12.5px;width:100%;min-width:420px;}
+.dist-table th,.dist-table td{border:1px solid var(--paper-border);padding:7px 11px;text-align:center;}
+.dist-table thead th{background:var(--accent-soft);color:var(--accent-strong);font-family:var(--font-display);font-weight:600;}
+.dist-table tbody th{background:var(--accent-soft);color:var(--accent-strong);font-family:var(--font-display);font-weight:600;text-align:left;}
+.graph-diagram{margin:18px 0;max-width:460px;}
+.graph-diagram svg{width:100%;height:auto;display:block;}
+
 /* theme toggle */
 .theme-toggle{
   position:fixed;bottom:16px;right:16px;z-index:40;background:var(--paper);border:1px solid var(--paper-border);
@@ -326,7 +343,7 @@ footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:
 </head>
 <body>
 
-<button class="menu-toggle" id="menuToggle" aria-label="Ouvrir la navigation">☰ Chapitres</button>
+<button class="menu-toggle" id="menuToggle" aria-label="Ouvrir la navigation">☰ Menu</button>
 <div class="backdrop" id="backdrop"></div>
 
 <div class="app">
@@ -346,17 +363,28 @@ footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:
       </div>
     </div>
 
+    <div class="tabs" id="tabSwitch">
+      <a href="#" class="tab-btn" data-tab="exercices">Exercices</a>
+      <a href="#algo" class="tab-btn" data-tab="algorithmes">Algorithmes</a>
+    </div>
+
     <div class="overall-progress">
-      <div class="label"><span>Progression</span><span id="overallCount">0 / 0</span></div>
+      <div class="label"><span>Progression (exercices)</span><span id="overallCount">0 / 0</span></div>
       <div class="bar"><span id="overallBar" style="width:0%"></span></div>
     </div>
 
     <div class="search-wrap">
-      <input type="search" id="searchInput" placeholder="Rechercher un exercice…" autocomplete="off">
+      <input type="search" id="searchInput" placeholder="Rechercher…" autocomplete="off">
     </div>
 
-    <a href="#" class="home-link" id="homeLink">Accueil</a>
-    <nav class="chapters" id="chaptersNav"></nav>
+    <div id="panel-exercices">
+      <a href="#" class="home-link" id="homeLink">Accueil</a>
+      <nav class="chapters" id="chaptersNav"></nav>
+    </div>
+    <div id="panel-algorithmes" style="display:none">
+      <a href="#algo" class="home-link" id="algoHomeLink">Accueil algorithmes</a>
+      <nav class="chapters" id="algoNav"></nav>
+    </div>
   </aside>
 
   <main class="main">
@@ -397,9 +425,10 @@ function highlightC(code){
   });
 }
 
-function codeBlock(raw, id){
+function codeBlock(raw, id, lang){
+  lang = lang || 'c';
   return '<div class="code-block">' +
-    '<div class="code-bar"><span class="code-lang">c</span><button class="copy-btn" data-copy="' + id + '">Copier</button></div>' +
+    '<div class="code-bar"><span class="code-lang">' + lang + '</span><button class="copy-btn" data-copy="' + id + '">Copier</button></div>' +
     '<pre><code class="hl" id="' + id + '" contenteditable="true" spellcheck="false" autocorrect="off" autocapitalize="off">' + highlightC(raw) + '</code></pre></div>';
 }
 
@@ -407,6 +436,64 @@ function allExercises(){
   const out = [];
   COURSE.forEach(ch => ch.exercises.forEach(ex => out.push({chapter: ch, ex: ex})));
   return out;
+}
+
+/* ---- petit graphe d'exemple, réutilisé par les fiches "plus court chemin" ---- */
+const GRAPH_NODES = { A:[50,130], B:[170,55], C:[170,205], D:[300,55], E:[300,205], F:[410,130] };
+const GRAPH_EDGES = [['A','B',4],['A','C',2],['B','C',1],['B','D',5],['C','D',8],['C','E',10],['D','E',2],['D','F',6],['E','F',3]];
+
+function edgeKey(u,v){ return [u,v].sort().join('-'); }
+
+function graphSvg(highlightEdges, highlightNodes){
+  const hlSet = new Set((highlightEdges || []).map(e => edgeKey(e[0], e[1])));
+  const hlNodes = new Set(highlightNodes || []);
+  let svg = '<svg viewBox="0 0 460 260" xmlns="http://www.w3.org/2000/svg">';
+  GRAPH_EDGES.forEach(function(e){
+    const u = e[0], v = e[1], w = e[2];
+    const p1 = GRAPH_NODES[u], p2 = GRAPH_NODES[v];
+    const on = hlSet.has(edgeKey(u, v));
+    const mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2;
+    svg += '<line x1="' + p1[0] + '" y1="' + p1[1] + '" x2="' + p2[0] + '" y2="' + p2[1] + '" stroke="' + (on ? 'var(--accent)' : 'var(--paper-border)') + '" stroke-width="' + (on ? 3 : 1.6) + '"/>';
+    svg += '<rect x="' + (mx - 10) + '" y="' + (my - 9) + '" width="20" height="16" fill="var(--paper)"/>';
+    svg += '<text x="' + mx + '" y="' + (my + 4) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="' + (on ? 'var(--accent-strong)' : 'var(--ink-faint)') + '">' + w + '</text>';
+  });
+  Object.keys(GRAPH_NODES).forEach(function(n){
+    const p = GRAPH_NODES[n];
+    const on = hlNodes.has(n);
+    svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="18" fill="' + (on ? 'var(--accent-soft)' : 'var(--paper)') + '" stroke="' + (on ? 'var(--accent)' : 'var(--ink-faint)') + '" stroke-width="2"/>';
+    svg += '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="14" fill="var(--ink)">' + n + '</text>';
+  });
+  svg += '</svg>';
+  return '<div class="hero-diagram graph-diagram">' + svg + '</div>';
+}
+
+function rowTable(rowLabel, nodes, values){
+  return '<div class="table-wrap"><table class="dist-table"><thead><tr><th></th>' +
+    nodes.map(function(n){ return '<th>' + n + '</th>'; }).join('') +
+    '</tr></thead><tbody><tr><th>' + rowLabel + '</th>' +
+    values.map(function(v){ return '<td>' + v + '</td>'; }).join('') +
+    '</tr></tbody></table></div>';
+}
+
+function matrixTable(nodes, matrix){
+  let html = '<div class="table-wrap"><table class="dist-table"><thead><tr><th></th>' +
+    nodes.map(function(n){ return '<th>' + n + '</th>'; }).join('') + '</tr></thead><tbody>';
+  nodes.forEach(function(row, i){
+    html += '<tr><th>' + row + '</th>' + matrix[i].map(function(v){ return '<td>' + v + '</td>'; }).join('') + '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function algoSectionsGrid(){
+  return ALGO_SECTIONS.map(function(sec){
+    const soon = sec.algos.length === 0;
+    return '<a class="chapter-card" href="#algo/' + sec.id + '">' +
+      '<h3>' + sec.title + '</h3>' +
+      '<p>' + sec.description + '</p>' +
+      '<div class="meta' + (soon ? ' soon' : '') + '">' + (soon ? 'Bientôt disponible' : sec.algos.length + ' algorithme' + (sec.algos.length > 1 ? 's' : '')) + '</div>' +
+      '</a>';
+  }).join('');
 }
 
 /* ============================================================
@@ -818,6 +905,118 @@ const COURSE = [
 ];
 
 /* ============================================================
+   FICHES ALGORITHMES — ajouter des sections / algos ici
+   ============================================================ */
+const SHORTEST_PATH_INTRO = `<p>Les algorithmes de plus court chemin cherchent, dans un graphe pondéré, le chemin de coût total minimal entre deux sommets (ou entre tous les couples de sommets). Pour comparer les trois algorithmes ci-dessous sur un pied d'égalité, on les applique tous au même graphe non orienté, à poids positifs :</p>` + graphSvg(null, null);
+
+const ALGO_SECTIONS = [
+  {
+    id: "plus-court-chemin",
+    title: "Plus court chemin",
+    description: "Floyd-Warshall, Dijkstra et A* appliqués au même graphe d'exemple, pour comparer leurs principes.",
+    intro: SHORTEST_PATH_INTRO,
+    algos: [
+      {
+        id: "floyd-warshall",
+        title: "Floyd-Warshall",
+        meta: "Tous les couples de sommets · programmation dynamique · O(n³)",
+        description: `<p>Floyd-Warshall calcule, en une seule exécution, la distance la plus courte entre <strong>tous les couples</strong> de sommets d'un graphe pondéré (orienté ou non) — y compris avec des poids négatifs, à condition qu'il n'existe aucun cycle de poids négatif.</p><p>Le principe est une programmation dynamique : on autorise progressivement chaque sommet <code>k</code> comme « relais » intermédiaire entre <code>i</code> et <code>j</code>, et on ne garde le détour par <code>k</code> que s'il raccourcit le chemin direct connu jusqu'ici.</p>`,
+        pseudocode: `fonction floyd_warshall(G):
+    pour chaque sommet i:
+        pour chaque sommet j:
+            si i = j:                    dist[i][j] ← 0
+            sinon si (i,j) est une arête: dist[i][j] ← poids(i,j)
+            sinon:                        dist[i][j] ← +infini
+
+    pour k parmi tous les sommets:
+        pour i parmi tous les sommets:
+            pour j parmi tous les sommets:
+                si dist[i][k] + dist[k][j] < dist[i][j]:
+                    dist[i][j] ← dist[i][k] + dist[k][j]
+
+    retourner dist`,
+        exampleHtml: `<p>On applique l'algorithme au graphe d'exemple (mêmes poids que ci-dessus). À chaque étape, on teste si un sommet <code>k</code> permet de raccourcir un trajet connu. Par exemple, la distance directe entre <strong>C</strong> et <strong>D</strong> est de 8. Quand on autorise <strong>B</strong> comme relais, on teste :</p>` +
+          codeBlock(`dist[C][B] + dist[B][D] = 1 + 5 = 6   <   dist[C][D] = 8
+=> on met à jour dist[C][D] ← 6`, 'code-fw-trace', 'trace') +
+          `<p>En répétant ce test pour chaque relais possible et chaque couple de sommets, on obtient la matrice des distances minimales suivante :</p>` +
+          matrixTable(['A','B','C','D','E','F'], [
+            [0,3,2,8,10,13],
+            [3,0,1,5,7,10],
+            [2,1,0,6,8,11],
+            [8,5,6,0,2,5],
+            [10,7,8,2,0,3],
+            [13,10,11,5,3,0]
+          ]) +
+          `<p>On y lit par exemple que le plus court chemin entre <strong>A</strong> et <strong>F</strong> coûte <strong>13</strong> — le même résultat que Dijkstra et A* trouveront ci-dessous, mais ici pour <em>tous</em> les couples de sommets à la fois.</p>`
+      },
+      {
+        id: "dijkstra",
+        title: "Dijkstra",
+        meta: "Un sommet source vers tous les autres · glouton · O((V+E) log V)",
+        description: `<p>Dijkstra calcule le plus court chemin depuis un sommet <strong>source unique</strong> vers tous les autres sommets d'un graphe à poids positifs ou nuls (des poids négatifs peuvent le mettre en défaut).</p><p>L'algorithme maintient une distance provisoire pour chaque sommet, et « valide » à chaque étape le sommet non encore traité dont la distance provisoire est la plus petite, avant de relâcher (mettre à jour) les distances de ses voisins. C'est un algorithme glouton : une fois un sommet validé, sa distance ne change plus.</p>`,
+        pseudocode: `fonction dijkstra(G, source):
+    pour chaque sommet v de G:
+        dist[v] ← +infini
+        prec[v] ← indéfini
+    dist[source] ← 0
+    Q ← tous les sommets de G   (file de priorité sur dist)
+
+    tant que Q n'est pas vide:
+        u ← sommet de Q avec dist[u] minimal
+        retirer u de Q
+        pour chaque voisin v de u:
+            d ← dist[u] + poids(u, v)
+            si d < dist[v]:
+                dist[v] ← d
+                prec[v] ← u
+
+    retourner dist, prec`,
+        exampleHtml: `<p>On exécute Dijkstra sur le graphe d'exemple, depuis le sommet <strong>A</strong> :</p>` +
+          graphSvg([['A','C'],['C','B'],['B','D'],['D','E'],['E','F']], ['A','F']) +
+          `<ul><li>On valide <strong>A</strong> (distance 0), puis <strong>C</strong> (distance 2, via A) — ce qui permet d'abaisser la distance de <strong>B</strong> à 3 (2 + 1), meilleure que le lien direct A–B de poids 4.</li>` +
+          `<li>On valide ensuite <strong>B</strong> (distance 3), ce qui abaisse la distance de <strong>D</strong> à 8 (3 + 5) plutôt que 10 en passant directement par C.</li>` +
+          `<li>Le traitement se poursuit jusqu'à <strong>F</strong> : la distance finale est <strong>13</strong>, obtenue par le chemin A → C → B → D → E → F.</li></ul>` +
+          `<p>Distances finales depuis A :</p>` +
+          rowTable('dist depuis A', ['A','B','C','D','E','F'], [0,3,2,8,10,13])
+      },
+      {
+        id: "a-star",
+        title: "A*",
+        meta: "Source → but, guidé par une heuristique · optimal si l'heuristique est admissible",
+        description: `<p>A* est une variante de Dijkstra dédiée à la recherche d'un chemin entre un sommet de <strong>départ</strong> et un sommet <strong>but</strong> précis. Il utilise une fonction <code>f(v) = g(v) + h(v)</code>, où <code>g(v)</code> est le coût déjà parcouru depuis le départ et <code>h(v)</code> une estimation (heuristique) du coût restant jusqu'au but.</p><p>Si <code>h</code> ne surestime jamais le coût réel restant (heuristique <em>admissible</em>), A* trouve le chemin optimal, en explorant généralement moins de sommets que Dijkstra puisque <code>h</code> oriente la recherche vers le but. Avec <code>h(v) = 0</code> pour tout sommet, A* se comporte exactement comme Dijkstra : c'est un cas particulier de l'algorithme.</p>`,
+        pseudocode: `fonction a_star(G, depart, but, h):
+    g[depart] ← 0
+    f[depart] ← h(depart)
+    ouvert ← {depart}
+    prec[depart] ← indéfini
+
+    tant que ouvert n'est pas vide:
+        u ← sommet de ouvert avec f[u] minimal
+        si u = but:
+            retourner reconstruire_chemin(prec, but)
+        retirer u de ouvert
+
+        pour chaque voisin v de u:
+            d ← g[u] + poids(u, v)
+            si v n'a pas encore de g[v] ou d < g[v]:
+                g[v] ← d
+                f[v] ← d + h(v)
+                prec[v] ← u
+                ajouter v à ouvert (si absent)
+
+    retourner échec   (pas de chemin jusqu'à but)`,
+        exampleHtml: `<p>On reprend le même graphe, avec un départ en <strong>A</strong>, un but en <strong>F</strong>, et l'heuristique admissible suivante (elle sous-estime toujours le coût réel restant jusqu'à F) :</p>` +
+          rowTable('h(v)', ['A','B','C','D','E','F'], [9,7,8,4,2,0]) +
+          `<ul><li>Depuis A (f = 0+9 = 9), on développe <strong>C</strong> (f = 2+8 = 10) avant <strong>B</strong> (f = 4+7 = 11) : l'heuristique fait explorer C en priorité.</li>` +
+          `<li>Depuis C, on découvre un meilleur chemin vers <strong>B</strong> (g = 3, f = 3+7 = 10), qui devient prioritaire à son tour.</li>` +
+          `<li>La recherche converge vers <strong>F</strong> avec un coût total g(F) = <strong>13</strong>, en suivant le chemin A → C → B → D → E → F — exactement le même chemin optimal que Dijkstra, mais évalué dans un ordre différent, guidé par l'heuristique.</li></ul>` +
+          graphSvg([['A','C'],['C','B'],['B','D'],['D','E'],['E','F']], ['A','F'])
+      }
+    ]
+  }
+];
+
+/* ============================================================
    PROGRESSION (localStorage, par visiteur)
    ============================================================ */
 const PROGRESS_KEY = 'exercices-c-mpi-progress';
@@ -863,9 +1062,20 @@ function updateProgressUI(){
 /* ============================================================
    NAVIGATION LATÉRALE
    ============================================================ */
+let currentTab = 'exercices';
 const openChapters = new Set();
+const openAlgoSections = new Set();
 
-function renderSidebar(activeChapterId, activeExId, filter){
+function setActiveTab(tab){
+  currentTab = tab;
+  document.getElementById('panel-exercices').style.display = tab === 'exercices' ? '' : 'none';
+  document.getElementById('panel-algorithmes').style.display = tab === 'algorithmes' ? '' : 'none';
+  document.querySelectorAll('#tabSwitch .tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+}
+
+function renderSidebarExercices(activeChapterId, activeExId, filter){
   if (activeChapterId) openChapters.add(activeChapterId);
   const nav = document.getElementById('chaptersNav');
   const q = (filter || '').trim().toLowerCase();
@@ -897,7 +1107,40 @@ function renderSidebar(activeChapterId, activeExId, filter){
     });
   });
 
-  document.getElementById('homeLink').classList.toggle('active', !activeChapterId);
+  document.getElementById('homeLink').classList.toggle('active', currentTab === 'exercices' && !activeChapterId);
+}
+
+function renderSidebarAlgo(activeSectionId, activeAlgoId, filter){
+  if (activeSectionId) openAlgoSections.add(activeSectionId);
+  const nav = document.getElementById('algoNav');
+  const q = (filter || '').trim().toLowerCase();
+  nav.innerHTML = ALGO_SECTIONS.map(sec => {
+    const matchingAlgo = sec.algos.filter(a => !q || a.title.toLowerCase().includes(q) || sec.title.toLowerCase().includes(q));
+    if (q && matchingAlgo.length === 0 && !sec.title.toLowerCase().includes(q)) return '';
+    const isOpen = openAlgoSections.has(sec.id) || (q && matchingAlgo.length > 0);
+    const countLabel = sec.algos.length ? sec.algos.length : '—';
+    let body;
+    if (sec.algos.length === 0){
+      body = '<div class="empty-note">Bientôt disponible</div>';
+    } else {
+      body = '<ul class="exlist">' + matchingAlgo.map(a => {
+        const active = (sec.id === activeSectionId && a.id === activeAlgoId) ? ' active' : '';
+        return '<li><a href="#algo/' + sec.id + '/' + a.id + '" class="' + active + '"><span class="dot"></span>' + a.title + '</a></li>';
+      }).join('') + '</ul>';
+    }
+    return '<details' + (isOpen ? ' open' : '') + ' data-section="' + sec.id + '">' +
+      '<summary><span class="chev"></span><span class="chapter-title">' + sec.title + '</span><span class="chapter-count">' + countLabel + '</span></summary>' +
+      body + '</details>';
+  }).join('');
+
+  nav.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if (d.open) openAlgoSections.add(d.dataset.section);
+      else openAlgoSections.delete(d.dataset.section);
+    });
+  });
+
+  document.getElementById('algoHomeLink').classList.toggle('active', currentTab === 'algorithmes' && !activeSectionId);
 }
 
 /* ============================================================
@@ -939,7 +1182,9 @@ function renderHome(){
       heroSvg() +
     '</div>' +
     '<div class="callout"><strong>' + total + ' exercices disponibles</strong> pour le moment, et d’autres chapitres arrivent au fur et à mesure. Cliquez sur un chapitre ci-dessous ou dans le menu de gauche.</div>' +
-    '<div class="chapter-grid">' + chaptersHtml + '</div>';
+    '<div class="chapter-grid">' + chaptersHtml + '</div>' +
+    '<div class="section-label" style="margin-top:38px;">Fiches algorithmes</div>' +
+    '<div class="chapter-grid">' + algoSectionsGrid() + '</div>';
 }
 
 function difficultyBadge(diff){
@@ -1007,6 +1252,57 @@ function renderExercise(ch, ex){
   wireCopyButtons();
 }
 
+function renderAlgoHome(){
+  document.getElementById('mainInner').innerHTML =
+    '<div class="hero">' +
+      '<div class="eyebrow">Informatique — MPI</div>' +
+      '<h1>Fiches algorithmes</h1>' +
+      '<p class="lead">Des fiches de référence par thème : principe, pseudocode et exemple d’exécution sur un graphe.</p>' +
+    '</div>' +
+    '<div class="chapter-grid">' + algoSectionsGrid() + '</div>';
+}
+
+function renderAlgoSection(sec){
+  let body;
+  if (sec.algos.length === 0){
+    body = '<div class="empty-chapter">Aucun algorithme dans cette section pour l’instant. D’autres fiches seront ajoutées prochainement.</div>';
+  } else {
+    body = '<div class="ex-card-list">' + sec.algos.map((a,i) => {
+      return '<a class="ex-card" href="#algo/' + sec.id + '/' + a.id + '">' +
+        '<span class="num">' + String(i+1).padStart(2,'0') + '</span>' +
+        '<span class="title">' + a.title + '<span class="subtitle">' + a.meta + '</span></span>' +
+        '</a>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / <a href="#algo">Algorithmes</a> / ' + sec.title + '</div>' +
+    '<div class="chapter-head"><h1>' + sec.title + '</h1><p class="desc">' + sec.description + '</p></div>' +
+    (sec.intro ? '<div class="intro-block">' + sec.intro + '</div>' : '') +
+    body;
+  wireCopyButtons();
+}
+
+function renderAlgoDetail(sec, algo){
+  const idx = sec.algos.findIndex(a => a.id === algo.id);
+  const prev = sec.algos[idx-1];
+  const next = sec.algos[idx+1];
+
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / <a href="#algo">Algorithmes</a> / <a href="#algo/' + sec.id + '">' + sec.title + '</a> / ' + algo.title + '</div>' +
+    '<div class="ex-head"><h1>' + algo.title + '</h1></div>' +
+    '<div class="subtitle-meta">' + algo.meta + '</div>' +
+    '<div class="statement">' + algo.description + '</div>' +
+    '<div class="section-label">Pseudocode</div>' +
+    codeBlock(algo.pseudocode, 'code-pseudo-' + algo.id, 'pseudocode') +
+    '<div class="section-label">Exemple sur un graphe</div>' +
+    '<div class="statement">' + algo.exampleHtml + '</div>' +
+    '<div class="ex-nav">' +
+      (prev ? '<a class="prev" href="#algo/' + sec.id + '/' + prev.id + '"><span class="dir">← Précédent</span>' + prev.title + '</a>' : '<a class="placeholder">.</a>') +
+      (next ? '<a class="next" href="#algo/' + sec.id + '/' + next.id + '"><span class="dir">Suivant →</span>' + next.title + '</a>' : '<a class="placeholder next">.</a>') +
+    '</div>';
+  wireCopyButtons();
+}
+
 function wireCopyButtons(){
   document.querySelectorAll('[data-copy]').forEach(btn => {
     btn.addEventListener('click', function(){
@@ -1039,16 +1335,35 @@ function fallbackCopy(text, cb){
    ============================================================ */
 function route(){
   const hash = location.hash.replace(/^#/, '');
-  const [chapterId, exId] = hash.split('/');
-  const ch = COURSE.find(c => c.id === chapterId);
-  if (!ch){
-    renderSidebar(null, null, document.getElementById('searchInput').value);
-    renderHome();
+  const parts = hash.split('/');
+  const filter = document.getElementById('searchInput').value;
+
+  if (parts[0] === 'algo'){
+    setActiveTab('algorithmes');
+    const sec = ALGO_SECTIONS.find(s => s.id === parts[1]);
+    renderSidebarExercices(null, null, filter);
+    if (!sec){
+      renderSidebarAlgo(null, null, filter);
+      renderAlgoHome();
+    } else {
+      const algo = parts[2] ? sec.algos.find(a => a.id === parts[2]) : null;
+      renderSidebarAlgo(sec.id, algo ? algo.id : null, filter);
+      if (algo) renderAlgoDetail(sec, algo);
+      else renderAlgoSection(sec);
+    }
   } else {
-    const ex = exId ? ch.exercises.find(e => e.id === exId) : null;
-    renderSidebar(ch.id, ex ? ex.id : null, document.getElementById('searchInput').value);
-    if (ex) renderExercise(ch, ex);
-    else renderChapter(ch);
+    setActiveTab('exercices');
+    const ch = COURSE.find(c => c.id === parts[0]);
+    renderSidebarAlgo(null, null, filter);
+    if (!ch){
+      renderSidebarExercices(null, null, filter);
+      renderHome();
+    } else {
+      const ex = parts[1] ? ch.exercises.find(e => e.id === parts[1]) : null;
+      renderSidebarExercices(ch.id, ex ? ex.id : null, filter);
+      if (ex) renderExercise(ch, ex);
+      else renderChapter(ch);
+    }
   }
   updateProgressUI();
   window.scrollTo(0,0);
@@ -1062,8 +1377,12 @@ window.addEventListener('hashchange', route);
    ============================================================ */
 document.getElementById('searchInput').addEventListener('input', function(){
   const hash = location.hash.replace(/^#/, '');
-  const [chapterId, exId] = hash.split('/');
-  renderSidebar(chapterId || null, exId || null, this.value);
+  const parts = hash.split('/');
+  if (parts[0] === 'algo'){
+    renderSidebarAlgo(parts[1] || null, parts[2] || null, this.value);
+  } else {
+    renderSidebarExercices(parts[0] || null, parts[1] || null, this.value);
+  }
 });
 
 /* ============================================================
