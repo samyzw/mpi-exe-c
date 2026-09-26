@@ -365,7 +365,8 @@ footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:
 
     <div class="tabs" id="tabSwitch">
       <a href="#" class="tab-btn" data-tab="exercices">Exercices</a>
-      <a href="#algo" class="tab-btn" data-tab="algorithmes">Algorithmes</a>
+      <a href="#notions" class="tab-btn" data-tab="notions">Notions</a>
+      <a href="#algo" class="tab-btn" data-tab="algorithmes">Algos</a>
     </div>
 
     <div class="overall-progress">
@@ -380,6 +381,10 @@ footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:
     <div id="panel-exercices">
       <a href="#" class="home-link" id="homeLink">Accueil</a>
       <nav class="chapters" id="chaptersNav"></nav>
+    </div>
+    <div id="panel-notions" style="display:none">
+      <a href="#notions" class="home-link" id="notionsHomeLink">Accueil notions</a>
+      <nav class="chapters" id="notionsNav"></nav>
     </div>
     <div id="panel-algorithmes" style="display:none">
       <a href="#algo" class="home-link" id="algoHomeLink">Accueil algorithmes</a>
@@ -492,6 +497,35 @@ function algoSectionsGrid(){
       '<h3>' + sec.title + '</h3>' +
       '<p>' + sec.description + '</p>' +
       '<div class="meta' + (soon ? ' soon' : '') + '">' + (soon ? 'Bientôt disponible' : sec.algos.length + ' algorithme' + (sec.algos.length > 1 ? 's' : '')) + '</div>' +
+      '</a>';
+  }).join('');
+}
+
+/* ---- petits arbres d'exemple, réutilisés par les fiches "Notions" ---- */
+function treeSvg(nodes, edges, viewW, viewH, highlightNodes){
+  const hl = new Set(highlightNodes || []);
+  let svg = '<svg viewBox="0 0 ' + viewW + ' ' + viewH + '" xmlns="http://www.w3.org/2000/svg">';
+  edges.forEach(function(e){
+    const p1 = nodes[e[0]], p2 = nodes[e[1]];
+    svg += '<line x1="' + p1[0] + '" y1="' + p1[1] + '" x2="' + p2[0] + '" y2="' + p2[1] + '" stroke="var(--paper-border)" stroke-width="1.6"/>';
+  });
+  Object.keys(nodes).forEach(function(n){
+    const p = nodes[n];
+    const on = hl.has(n);
+    svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="17" fill="' + (on ? 'var(--accent-soft)' : 'var(--paper)') + '" stroke="' + (on ? 'var(--accent)' : 'var(--ink-faint)') + '" stroke-width="2"/>';
+    svg += '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="13" fill="var(--ink)">' + n + '</text>';
+  });
+  svg += '</svg>';
+  return '<div class="hero-diagram graph-diagram">' + svg + '</div>';
+}
+
+function notionsSectionsGrid(){
+  return NOTIONS_SECTIONS.map(function(sec){
+    const soon = sec.notions.length === 0;
+    return '<a class="chapter-card" href="#notions/' + sec.id + '">' +
+      '<h3>' + sec.title + '</h3>' +
+      '<p>' + sec.description + '</p>' +
+      '<div class="meta' + (soon ? ' soon' : '') + '">' + (soon ? 'Bientôt disponible' : sec.notions.length + ' fiche' + (sec.notions.length > 1 ? 's' : '')) + '</div>' +
       '</a>';
   }).join('');
 }
@@ -1017,6 +1051,128 @@ const ALGO_SECTIONS = [
 ];
 
 /* ============================================================
+   FICHES NOTIONS — ajouter des sections / notions ici
+   ============================================================ */
+const NODE_STRUCT_CODE = `typedef struct noeud {
+    int valeur;
+    struct noeud *gauche;
+    struct noeud *droit;
+} noeud;
+
+typedef noeud *arbre;`;
+
+const NOTIONS_SECTIONS = [
+  {
+    id: "graphes-notions",
+    title: "Graphes",
+    description: "Vocabulaire de base des graphes (sommets, arêtes, degré, chemin, cycle) et notion d'arbre couvrant.",
+    intro: "",
+    notions: [
+      {
+        id: "vocabulaire-graphes",
+        title: "Vocabulaire des graphes",
+        meta: "Sommets, arêtes, degré, chemin, cycle, connexité",
+        content: `<p>Un <strong>graphe</strong> G = (S, A) est formé d'un ensemble de <strong>sommets</strong> S (ou nœuds) et d'un ensemble d'<strong>arêtes</strong> A reliant des paires de sommets. On distingue :</p>
+<ul>
+<li><strong>Graphe non orienté</strong> : une arête {u, v} ne privilégie aucun sens de parcours entre u et v.</li>
+<li><strong>Graphe orienté</strong> : on parle alors d'<strong>arcs</strong> ; un arc (u, v) va de u vers v, et rien ne garantit qu'on puisse revenir de v vers u.</li>
+<li><strong>Graphe pondéré</strong> : chaque arête (ou arc) porte un poids — un coût, une distance, une durée…</li>
+</ul>` + graphSvg(null, null) + `<p>On y définit notamment :</p>
+<ul>
+<li><strong>Degré</strong> d'un sommet : nombre d'arêtes qui lui sont incidentes (pour un graphe orienté, on distingue degré sortant et degré entrant). Sur le graphe ci-dessus, le sommet <strong>C</strong> est relié à A, B, D et E : son degré vaut 4.</li>
+<li><strong>Chemin</strong> : suite de sommets reliés successivement par des arêtes, par exemple A – C – B – D. Sa longueur est le nombre d'arêtes parcourues (ou la somme des poids si le graphe est pondéré).</li>
+<li><strong>Cycle</strong> : chemin qui revient à son sommet de départ sans emprunter deux fois la même arête, par exemple B – C – D – B.</li>
+<li><strong>Connexité</strong> : un graphe non orienté est <strong>connexe</strong> si, depuis n'importe quel sommet, on peut atteindre n'importe quel autre en suivant des arêtes.</li>
+</ul>
+<p>En machine, un graphe se représente le plus souvent par une <strong>matrice d'adjacence</strong> (un tableau <code>n×n</code> où la case [i][j] indique s'il existe une arête entre i et j, et éventuellement son poids), ou par des <strong>listes d'adjacence</strong> (un tableau de n listes, la liste i contenant les voisins du sommet i) — une représentation qui réutilise directement les listes chaînées de l'onglet Exercices.</p>`
+      },
+      {
+        id: "arbre-couvrant",
+        title: "Arbre couvrant",
+        meta: "Sous-graphe connexe, sans cycle, qui touche tous les sommets",
+        content: `<p>Soit G un graphe non orienté <strong>connexe</strong>. Un <strong>arbre couvrant</strong> (ou arbre recouvrant) de G est un sous-graphe de G qui :</p>
+<ul>
+<li>contient <strong>tous les sommets</strong> de G ;</li>
+<li>est <strong>connexe</strong> ;</li>
+<li>ne contient <strong>aucun cycle</strong> — c'est bien un arbre.</li>
+</ul>
+<p>Un graphe à n sommets admet un arbre couvrant si et seulement s'il est connexe, et un tel arbre possède alors toujours exactement <strong>n − 1 arêtes</strong> : c'est le nombre minimal d'arêtes nécessaire pour relier n sommets, sans qu'il en reste une de trop (ce qui créerait un cycle).</p>` +
+          graphSvg([['B','C'],['A','C'],['D','E'],['E','F'],['B','D']], null) +
+          `<p>Voici un arbre couvrant du graphe d'exemple : les arêtes B–C, A–C, D–E, E–F et B–D (en couleur) relient les 6 sommets avec exactement 5 arêtes, sans aucun cycle. Il s'agit même ici de l'<strong>arbre couvrant de poids minimal</strong> (poids total : 1 + 2 + 2 + 3 + 5 = 13), c'est-à-dire l'arbre couvrant dont la somme des poids des arêtes est la plus petite possible parmi tous les arbres couvrants de ce graphe. On calcule un tel arbre avec les algorithmes de <strong>Kruskal</strong> ou de <strong>Prim</strong>.</p>`
+      }
+    ]
+  },
+  {
+    id: "arbres-notions",
+    title: "Arbres",
+    description: "De l'arbre en général jusqu'à l'arbre binaire de recherche : vocabulaire, structures en C, exemples.",
+    intro: "",
+    notions: [
+      {
+        id: "arbre-general",
+        title: "Arbre (vocabulaire général)",
+        meta: "Racine, feuille, hauteur, profondeur, sous-arbre, forêt",
+        content: `<p>Un <strong>arbre</strong> est une structure hiérarchique : un sommet particulier est désigné comme <strong>racine</strong>, et chaque autre sommet possède un unique <strong>parent</strong>, ce qui organise l'ensemble en niveaux. Vu comme un graphe, un arbre à n sommets est un graphe non orienté connexe et sans cycle, muni d'une racine — il possède donc exactement n − 1 arêtes.</p>` +
+          treeSvg({ R:[230,30], A:[110,100], B:[230,100], C:[350,100], D:[70,170], E:[150,170] },
+            [['R','A'],['R','B'],['R','C'],['A','D'],['A','E']], 460, 200, ['B','C','D','E']) +
+          `<p>Vocabulaire associé :</p>
+<ul>
+<li><strong>Nœud</strong> : un sommet de l'arbre. Un nœud sans enfant est une <strong>feuille</strong> (en couleur ci-dessus) ; un nœud avec au moins un enfant est un nœud <strong>interne</strong>.</li>
+<li><strong>Parent / enfant</strong> : si un nœud u est directement relié à un nœud v situé un niveau en dessous, u est le parent de v, et v est un enfant de u.</li>
+<li><strong>Sous-arbre</strong> : un nœud et l'ensemble de ses descendants, vus eux-mêmes comme un arbre.</li>
+<li><strong>Profondeur</strong> d'un nœud : nombre d'arêtes sur le chemin qui le relie à la racine (la racine est à la profondeur 0).</li>
+<li><strong>Hauteur</strong> de l'arbre : la plus grande profondeur atteinte par une feuille.</li>
+<li><strong>Arité</strong> : nombre maximal d'enfants qu'un nœud peut avoir (2 pour un arbre binaire).</li>
+<li><strong>Forêt</strong> : un ensemble d'arbres disjoints.</li>
+</ul>
+<p>Sur l'exemple ci-dessus, R est la racine ; B, C, D et E sont des feuilles (D et E se trouvent dans le sous-arbre enraciné en A) ; la hauteur de l'arbre est 2 (chemin R – A – D, par exemple).</p>`
+      },
+      {
+        id: "arbre-binaire",
+        title: "Arbre binaire",
+        meta: "Au plus deux enfants par nœud, distingués gauche et droit",
+        content: `<p>Un <strong>arbre binaire</strong> est un arbre où chaque nœud a <strong>au plus deux enfants</strong>, que l'on distingue comme <strong>enfant gauche</strong> et <strong>enfant droit</strong> (même s'il n'y en a qu'un seul, sa position gauche/droite compte).</p>` +
+          codeBlock(NODE_STRUCT_CODE, 'code-node-struct') +
+          `<p>On retrouve ici la même idée que pour une liste chaînée, avec un pointeur supplémentaire : chaque nœud pointe vers au plus deux nœuds (<code>gauche</code> et <code>droit</code>) au lieu d'un seul (<code>suivant</code>).</p>` +
+          treeSvg({ R:[230,30], A:[150,100], B:[310,100], C:[190,170] }, [['R','A'],['R','B'],['A','C']], 460, 200, null) +
+          `<p>Quelques précisions de vocabulaire, parfois source de confusion :</p>
+<ul>
+<li><strong>Arbre binaire strict</strong> (ou <em>plein</em>) : chaque nœud a exactement 0 ou 2 enfants, jamais un seul.</li>
+<li><strong>Arbre binaire parfait</strong> : tous les niveaux sont entièrement remplis — voir la fiche « Arbre complet ».</li>
+</ul>
+<p>Sur l'exemple ci-dessus, le nœud A n'a qu'un seul enfant, à droite (C) : ce n'est donc pas un arbre binaire strict.</p>`
+      },
+      {
+        id: "arbre-binaire-recherche",
+        title: "Arbre binaire de recherche",
+        meta: "Propriété d'ordre, recherche et insertion en O(log n) en moyenne",
+        content: `<p>Un <strong>arbre binaire de recherche</strong> (ABR, ou BST en anglais) est un arbre binaire muni d'une contrainte d'ordre : pour <strong>tout</strong> nœud n, toutes les valeurs de son sous-arbre gauche sont strictement inférieures à la valeur de n, et toutes celles de son sous-arbre droit lui sont strictement supérieures. Cette propriété se vérifie à tous les niveaux, pas seulement entre un nœud et ses enfants directs.</p>` +
+          treeSvg({ '8':[230,30], '3':[130,90], '10':[330,90], '1':[70,150], '6':[190,150], '14':[390,150], '4':[150,210], '7':[230,210], '13':[360,210] },
+            [['8','3'],['8','10'],['3','1'],['3','6'],['6','4'],['6','7'],['10','14'],['14','13']], 460, 250, null) +
+          `<p>L'arbre ci-dessus est obtenu en insérant successivement les valeurs 8, 3, 10, 1, 6, 14, 4, 7, 13 dans un ABR initialement vide : chaque nouvelle valeur descend depuis la racine en allant à gauche si elle est plus petite, à droite si elle est plus grande, jusqu'à trouver une place libre.</p>
+<p>L'intérêt d'un ABR est que la <strong>recherche</strong>, l'<strong>insertion</strong> et la <strong>suppression</strong> n'y parcourent qu'un seul chemin depuis la racine : leur coût est proportionnel à la <strong>hauteur</strong> de l'arbre. En moyenne, pour des insertions dans un ordre aléatoire, cette hauteur est en O(log n) — mais dans le pire cas (par exemple en insérant des valeurs déjà triées), l'arbre dégénère en une chaîne et la hauteur devient O(n), aussi lent qu'une recherche dans une liste chaînée.</p>
+<p>Autre propriété utile : un parcours <strong>infixe</strong> (sous-arbre gauche, puis nœud, puis sous-arbre droit) d'un ABR donne exactement les valeurs triées par ordre croissant.</p>`
+      },
+      {
+        id: "arbre-complet",
+        title: "Arbre complet",
+        meta: "Tous les niveaux remplis, sauf le dernier, rempli à gauche",
+        content: `<p>Deux notions voisines, à ne pas confondre :</p>
+<div class="callout"><strong>Arbre binaire parfait</strong> : tous les niveaux sont entièrement remplis. Un arbre parfait de hauteur h possède exactement 2<sup>h+1</sup> − 1 nœuds, dont 2<sup>h</sup> feuilles.</div>` +
+          treeSvg({ '1':[230,30], '2':[130,90], '3':[330,90], '4':[80,150], '5':[180,150], '6':[280,150], '7':[380,150] },
+            [['1','2'],['1','3'],['2','4'],['2','5'],['3','6'],['3','7']], 460, 200, null) +
+          `<div class="callout"><strong>Arbre binaire complet</strong> : tous les niveaux sont remplis, <em>sauf éventuellement le dernier</em>, qui est alors rempli de gauche à droite, sans « trou ».</div>` +
+          treeSvg({ '1':[230,30], '2':[130,90], '3':[330,90], '4':[80,150], '5':[180,150], '6':[280,150], '7':[380,150], '8':[55,210], '9':[105,210], '10':[155,210] },
+            [['1','2'],['1','3'],['2','4'],['2','5'],['3','6'],['3','7'],['4','8'],['4','9'],['5','10']], 460, 250, null) +
+          `<p>Un arbre parfait est toujours complet (la réciproque est fausse) : c'est le cas particulier où le dernier niveau est, lui aussi, entièrement rempli.</p>
+<p>Cette contrainte — remplir le dernier niveau strictement de gauche à droite — est ce qui permet de stocker un arbre complet dans un simple <strong>tableau</strong>, sans aucun pointeur : en numérotant les nœuds par niveau de 1 à n (racine à l'indice 1, comme sur le second schéma ci-dessus), l'enfant gauche du nœud d'indice i est à l'indice 2i, son enfant droit à l'indice 2i + 1, et son parent à l'indice i / 2 (division entière). C'est exactement la structure utilisée pour représenter un <strong>tas binaire</strong> (heap).</p>
+<p>Un arbre <strong>équilibré</strong> est une notion différente (et dont la définition varie parfois d'un ouvrage à l'autre) : il s'agit en général d'un arbre dont la hauteur reste en O(log n) par rapport au nombre de nœuds, sans exiger que le dernier niveau soit rempli de gauche à droite. Un ABR obtenu par des insertions bien réparties peut ainsi être équilibré sans être complet.</p>`
+      }
+    ]
+  }
+];
+
+/* ============================================================
    PROGRESSION (localStorage, par visiteur)
    ============================================================ */
 const PROGRESS_KEY = 'exercices-c-mpi-progress';
@@ -1065,11 +1221,13 @@ function updateProgressUI(){
 let currentTab = 'exercices';
 const openChapters = new Set();
 const openAlgoSections = new Set();
+const openNotionsSections = new Set();
 
 function setActiveTab(tab){
   currentTab = tab;
   document.getElementById('panel-exercices').style.display = tab === 'exercices' ? '' : 'none';
   document.getElementById('panel-algorithmes').style.display = tab === 'algorithmes' ? '' : 'none';
+  document.getElementById('panel-notions').style.display = tab === 'notions' ? '' : 'none';
   document.querySelectorAll('#tabSwitch .tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
   });
@@ -1143,6 +1301,39 @@ function renderSidebarAlgo(activeSectionId, activeAlgoId, filter){
   document.getElementById('algoHomeLink').classList.toggle('active', currentTab === 'algorithmes' && !activeSectionId);
 }
 
+function renderSidebarNotions(activeSectionId, activeNotionId, filter){
+  if (activeSectionId) openNotionsSections.add(activeSectionId);
+  const nav = document.getElementById('notionsNav');
+  const q = (filter || '').trim().toLowerCase();
+  nav.innerHTML = NOTIONS_SECTIONS.map(sec => {
+    const matchingNotion = sec.notions.filter(n => !q || n.title.toLowerCase().includes(q) || sec.title.toLowerCase().includes(q));
+    if (q && matchingNotion.length === 0 && !sec.title.toLowerCase().includes(q)) return '';
+    const isOpen = openNotionsSections.has(sec.id) || (q && matchingNotion.length > 0);
+    const countLabel = sec.notions.length ? sec.notions.length : '—';
+    let body;
+    if (sec.notions.length === 0){
+      body = '<div class="empty-note">Bientôt disponible</div>';
+    } else {
+      body = '<ul class="exlist">' + matchingNotion.map(n => {
+        const active = (sec.id === activeSectionId && n.id === activeNotionId) ? ' active' : '';
+        return '<li><a href="#notions/' + sec.id + '/' + n.id + '" class="' + active + '"><span class="dot"></span>' + n.title + '</a></li>';
+      }).join('') + '</ul>';
+    }
+    return '<details' + (isOpen ? ' open' : '') + ' data-section="' + sec.id + '">' +
+      '<summary><span class="chev"></span><span class="chapter-title">' + sec.title + '</span><span class="chapter-count">' + countLabel + '</span></summary>' +
+      body + '</details>';
+  }).join('');
+
+  nav.querySelectorAll('details').forEach(d => {
+    d.addEventListener('toggle', () => {
+      if (d.open) openNotionsSections.add(d.dataset.section);
+      else openNotionsSections.delete(d.dataset.section);
+    });
+  });
+
+  document.getElementById('notionsHomeLink').classList.toggle('active', currentTab === 'notions' && !activeSectionId);
+}
+
 /* ============================================================
    VUES
    ============================================================ */
@@ -1183,6 +1374,8 @@ function renderHome(){
     '</div>' +
     '<div class="callout"><strong>' + total + ' exercices disponibles</strong> pour le moment, et d’autres chapitres arrivent au fur et à mesure. Cliquez sur un chapitre ci-dessous ou dans le menu de gauche.</div>' +
     '<div class="chapter-grid">' + chaptersHtml + '</div>' +
+    '<div class="section-label" style="margin-top:38px;">Fiches notions</div>' +
+    '<div class="chapter-grid">' + notionsSectionsGrid() + '</div>' +
     '<div class="section-label" style="margin-top:38px;">Fiches algorithmes</div>' +
     '<div class="chapter-grid">' + algoSectionsGrid() + '</div>';
 }
@@ -1303,6 +1496,53 @@ function renderAlgoDetail(sec, algo){
   wireCopyButtons();
 }
 
+function renderNotionsHome(){
+  document.getElementById('mainInner').innerHTML =
+    '<div class="hero">' +
+      '<div class="eyebrow">Informatique — MPI</div>' +
+      '<h1>Fiches notions</h1>' +
+      '<p class="lead">Le cours : définitions, vocabulaire et schémas, pour poser les bases avant les exercices et les algorithmes.</p>' +
+    '</div>' +
+    '<div class="chapter-grid">' + notionsSectionsGrid() + '</div>';
+}
+
+function renderNotionsSection(sec){
+  let body;
+  if (sec.notions.length === 0){
+    body = '<div class="empty-chapter">Aucune fiche dans cette section pour l’instant. D’autres notions seront ajoutées prochainement.</div>';
+  } else {
+    body = '<div class="ex-card-list">' + sec.notions.map((n,i) => {
+      return '<a class="ex-card" href="#notions/' + sec.id + '/' + n.id + '">' +
+        '<span class="num">' + String(i+1).padStart(2,'0') + '</span>' +
+        '<span class="title">' + n.title + '<span class="subtitle">' + n.meta + '</span></span>' +
+        '</a>';
+    }).join('') + '</div>';
+  }
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / <a href="#notions">Notions</a> / ' + sec.title + '</div>' +
+    '<div class="chapter-head"><h1>' + sec.title + '</h1><p class="desc">' + sec.description + '</p></div>' +
+    (sec.intro ? '<div class="intro-block">' + sec.intro + '</div>' : '') +
+    body;
+  wireCopyButtons();
+}
+
+function renderNotionDetail(sec, notion){
+  const idx = sec.notions.findIndex(n => n.id === notion.id);
+  const prev = sec.notions[idx-1];
+  const next = sec.notions[idx+1];
+
+  document.getElementById('mainInner').innerHTML =
+    '<div class="crumb"><a href="#">Accueil</a> / <a href="#notions">Notions</a> / <a href="#notions/' + sec.id + '">' + sec.title + '</a> / ' + notion.title + '</div>' +
+    '<div class="ex-head"><h1>' + notion.title + '</h1></div>' +
+    (notion.meta ? '<div class="subtitle-meta">' + notion.meta + '</div>' : '') +
+    '<div class="statement">' + notion.content + '</div>' +
+    '<div class="ex-nav">' +
+      (prev ? '<a class="prev" href="#notions/' + sec.id + '/' + prev.id + '"><span class="dir">← Précédent</span>' + prev.title + '</a>' : '<a class="placeholder">.</a>') +
+      (next ? '<a class="next" href="#notions/' + sec.id + '/' + next.id + '"><span class="dir">Suivant →</span>' + next.title + '</a>' : '<a class="placeholder next">.</a>') +
+    '</div>';
+  wireCopyButtons();
+}
+
 function wireCopyButtons(){
   document.querySelectorAll('[data-copy]').forEach(btn => {
     btn.addEventListener('click', function(){
@@ -1342,6 +1582,7 @@ function route(){
     setActiveTab('algorithmes');
     const sec = ALGO_SECTIONS.find(s => s.id === parts[1]);
     renderSidebarExercices(null, null, filter);
+    renderSidebarNotions(null, null, filter);
     if (!sec){
       renderSidebarAlgo(null, null, filter);
       renderAlgoHome();
@@ -1351,10 +1592,25 @@ function route(){
       if (algo) renderAlgoDetail(sec, algo);
       else renderAlgoSection(sec);
     }
+  } else if (parts[0] === 'notions'){
+    setActiveTab('notions');
+    const sec = NOTIONS_SECTIONS.find(s => s.id === parts[1]);
+    renderSidebarExercices(null, null, filter);
+    renderSidebarAlgo(null, null, filter);
+    if (!sec){
+      renderSidebarNotions(null, null, filter);
+      renderNotionsHome();
+    } else {
+      const notion = parts[2] ? sec.notions.find(n => n.id === parts[2]) : null;
+      renderSidebarNotions(sec.id, notion ? notion.id : null, filter);
+      if (notion) renderNotionDetail(sec, notion);
+      else renderNotionsSection(sec);
+    }
   } else {
     setActiveTab('exercices');
     const ch = COURSE.find(c => c.id === parts[0]);
     renderSidebarAlgo(null, null, filter);
+    renderSidebarNotions(null, null, filter);
     if (!ch){
       renderSidebarExercices(null, null, filter);
       renderHome();
@@ -1380,6 +1636,8 @@ document.getElementById('searchInput').addEventListener('input', function(){
   const parts = hash.split('/');
   if (parts[0] === 'algo'){
     renderSidebarAlgo(parts[1] || null, parts[2] || null, this.value);
+  } else if (parts[0] === 'notions'){
+    renderSidebarNotions(parts[1] || null, parts[2] || null, this.value);
   } else {
     renderSidebarExercices(parts[0] || null, parts[1] || null, this.value);
   }
