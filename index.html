@@ -519,6 +519,94 @@ function treeSvg(nodes, edges, viewW, viewH, highlightNodes){
   return '<div class="hero-diagram graph-diagram">' + svg + '</div>';
 }
 
+/* ---- automates finis, réutilisé par les fiches "Notions > Automates" ---- */
+let __autoIdCounter = 0;
+function automatonSvg(nodes, transitions, initial, finals, viewW, viewH, stateStyles){
+  __autoIdCounter++;
+  const markerId = 'af-arrow-' + __autoIdCounter;
+  stateStyles = stateStyles || {};
+  const finalSet = new Set(finals || []);
+
+  const grouped = {};
+  const order = [];
+  transitions.forEach(function(t){
+    const key = t[0] + '>' + t[1];
+    if (!grouped[key]) { grouped[key] = []; order.push(key); }
+    grouped[key].push(t[2]);
+  });
+  const hasReverse = {};
+  order.forEach(function(key){
+    const parts = key.split('>');
+    hasReverse[key] = Object.prototype.hasOwnProperty.call(grouped, parts[1] + '>' + parts[0]);
+  });
+
+  let svg = '<svg viewBox="0 0 ' + viewW + ' ' + viewH + '" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<defs><marker id="' + markerId + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--ink-soft)"/></marker></defs>';
+
+  order.forEach(function(key){
+    const parts = key.split('>');
+    const from = parts[0], to = parts[1];
+    const label = grouped[key].join(', ');
+    const p1 = nodes[from];
+
+    if (from === to){
+      const x = p1[0], y = p1[1];
+      svg += '<path d="M ' + (x-11) + ' ' + (y-15) + ' C ' + (x-24) + ' ' + (y-42) + ' ' + (x+24) + ' ' + (y-42) + ' ' + (x+11) + ' ' + (y-15) + '" fill="none" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#' + markerId + ')"/>';
+      svg += '<rect x="' + (x-17) + '" y="' + (y-58) + '" width="34" height="15" fill="var(--paper)"/>';
+      svg += '<text x="' + x + '" y="' + (y-47) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-soft)">' + label + '</text>';
+      return;
+    }
+
+    const p2 = nodes[to];
+    const dx = p2[0]-p1[0], dy = p2[1]-p1[1];
+    const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+    const ux = dx/dist, uy = dy/dist;
+    const px = -uy, py = ux;
+
+    const curved = hasReverse[key];
+    const bulge = curved ? 22 : 0;
+    const cx = (p1[0]+p2[0])/2 + px*bulge;
+    const cy = (p1[1]+p2[1])/2 + py*bulge;
+
+    const x1 = p1[0] + ux*19, y1 = p1[1] + uy*19;
+    const x2 = p2[0] - ux*20, y2 = p2[1] - uy*20;
+
+    if (curved){
+      svg += '<path d="M ' + x1 + ' ' + y1 + ' Q ' + cx + ' ' + cy + ' ' + x2 + ' ' + y2 + '" fill="none" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#' + markerId + ')"/>';
+      const lx = (x1+x2)/2 + px*(bulge*0.55), ly = (y1+y2)/2 + py*(bulge*0.55);
+      svg += '<rect x="' + (lx-13) + '" y="' + (ly-9) + '" width="26" height="16" fill="var(--paper)"/>';
+      svg += '<text x="' + lx + '" y="' + (ly+4) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-soft)">' + label + '</text>';
+    } else {
+      svg += '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="var(--ink-soft)" stroke-width="1.6" marker-end="url(#' + markerId + ')"/>';
+      const mx = (x1+x2)/2, my = (y1+y2)/2;
+      svg += '<rect x="' + (mx-13) + '" y="' + (my-9) + '" width="26" height="16" fill="var(--paper)"/>';
+      svg += '<text x="' + mx + '" y="' + (my+4) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-soft)">' + label + '</text>';
+    }
+  });
+
+  const ip = nodes[initial];
+  svg += '<line x1="' + (ip[0]-46) + '" y1="' + ip[1] + '" x2="' + (ip[0]-19) + '" y2="' + ip[1] + '" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#' + markerId + ')"/>';
+
+  Object.keys(nodes).forEach(function(n){
+    const p = nodes[n];
+    const isFinal = finalSet.has(n);
+    const style = stateStyles[n];
+    const defaultStroke = isFinal ? 'var(--accent)' : 'var(--ink-faint)';
+    const defaultFill = isFinal ? 'var(--accent-soft)' : 'var(--paper)';
+    const strokeColor = (style && style.stroke) ? style.stroke : defaultStroke;
+    const fillColor = (style && style.fill) ? style.fill : defaultFill;
+    const dash = (style && style.dashed) ? ' stroke-dasharray="4 3"' : '';
+    svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="18" fill="' + fillColor + '" stroke="' + strokeColor + '" stroke-width="2"' + dash + '/>';
+    if (isFinal){
+      svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="13" fill="none" stroke="' + strokeColor + '" stroke-width="1.6"' + dash + '/>';
+    }
+    svg += '<text x="' + p[0] + '" y="' + (p[1]+5) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="600" font-size="13" fill="var(--ink)">' + n + '</text>';
+  });
+
+  svg += '</svg>';
+  return '<div class="hero-diagram graph-diagram">' + svg + '</div>';
+}
+
 function notionsSectionsGrid(){
   return NOTIONS_SECTIONS.map(function(sec){
     const soon = sec.notions.length === 0;
@@ -1167,6 +1255,109 @@ const NOTIONS_SECTIONS = [
           `<p>Un arbre parfait est toujours complet (la réciproque est fausse) : c'est le cas particulier où le dernier niveau est, lui aussi, entièrement rempli.</p>
 <p>Cette contrainte — remplir le dernier niveau strictement de gauche à droite — est ce qui permet de stocker un arbre complet dans un simple <strong>tableau</strong>, sans aucun pointeur : en numérotant les nœuds par niveau de 1 à n (racine à l'indice 1, comme sur le second schéma ci-dessus), l'enfant gauche du nœud d'indice i est à l'indice 2i, son enfant droit à l'indice 2i + 1, et son parent à l'indice i / 2 (division entière). C'est exactement la structure utilisée pour représenter un <strong>tas binaire</strong> (heap).</p>
 <p>Un arbre <strong>équilibré</strong> est une notion différente (et dont la définition varie parfois d'un ouvrage à l'autre) : il s'agit en général d'un arbre dont la hauteur reste en O(log n) par rapport au nombre de nœuds, sans exiger que le dernier niveau soit rempli de gauche à droite. Un ABR obtenu par des insertions bien réparties peut ainsi être équilibré sans être complet.</p>`
+      }
+    ]
+  },
+  {
+    id: "automates-notions",
+    title: "Automates",
+    description: "Automates finis déterministes : définition, complétude, états utiles et automate émondé.",
+    intro: "",
+    notions: [
+      {
+        id: "afd-definition",
+        title: "Automate fini déterministe",
+        meta: "Le 5-uplet (Q, Σ, δ, q0, F) et le mot reconnu",
+        content: `<p>Un <strong>automate fini déterministe</strong> (AFD) est un quintuplet <strong>A = (Q, Σ, δ, q0, F)</strong> où :</p>
+<ul>
+<li><strong>Q</strong> est un ensemble fini d'<strong>états</strong> ;</li>
+<li><strong>Σ</strong> est un ensemble fini appelé <strong>alphabet</strong> ;</li>
+<li><strong>δ : Q × Σ → Q</strong> est la <strong>fonction de transition</strong> : déterministe, car pour un état et une lettre donnés il y a au plus un état suivant, et éventuellement non définie partout (voir la fiche « Automate complet ») ;</li>
+<li><strong>q0 ∈ Q</strong> est l'<strong>état initial</strong> ;</li>
+<li><strong>F ⊆ Q</strong> est l'ensemble des <strong>états finaux</strong> (ou acceptants).</li>
+</ul>
+<p>On étend δ aux mots en posant δ(q, ε) = q et δ(q, w·a) = δ(δ(q, w), a). Un mot w est <strong>reconnu</strong> (ou accepté) par A si δ(q0, w) ∈ F : en partant de q0 et en suivant les transitions lettre par lettre, on termine dans un état final. L'ensemble des mots reconnus par A est le <strong>langage reconnu</strong>, noté L(A).</p>` +
+          automatonSvg(
+            { q0:[150,120], q1:[330,120] },
+            [['q0','q1','a'], ['q0','q0','b'], ['q1','q0','a'], ['q1','q1','b']],
+            'q0', ['q0'], 460, 210
+          ) +
+          `<p>Sur cet automate (Σ = {a, b} ; q0 initial, marqué par la flèche entrante ; q0 final, marqué par le double cercle), chaque lecture d'un <code>a</code> fait basculer entre q0 et q1 : on reconnaît donc les mots contenant un <strong>nombre pair de a</strong>. Le mot <code>abab</code> (deux <code>a</code>) ramène en q0 : il est accepté. Le mot <code>a</code> seul mène en q1 : il est rejeté.</p>`
+      },
+      {
+        id: "afd-complet",
+        title: "Automate complet",
+        meta: "Transition définie pour chaque lettre, méthode du puits",
+        content: `<p>Un AFD A = (Q, Σ, δ, q0, F) est <strong>complet</strong> si δ est définie pour <strong>tout</strong> couple (état, lettre) de Q × Σ : depuis n'importe quel état, on peut toujours lire n'importe quelle lettre. Dans le cas contraire, l'automate est dit <strong>partiel</strong> : lire une lettre pour laquelle aucune transition n'est définie provoque le rejet immédiat du mot.</p>
+<p>Voici un automate partiel reconnaissant les mots qui <strong>commencent par a</strong> (Σ = {a, b}) :</p>` +
+          automatonSvg(
+            { q0:[130,120], q1:[330,120] },
+            [['q0','q1','a'], ['q1','q1','a'], ['q1','q1','b']],
+            'q0', ['q1'], 460, 210
+          ) +
+          `<p>Depuis q0, seule la lettre a est définie (vers q1, final, qui boucle ensuite sur tout) : aucune transition n'est définie sur b depuis q0, puisqu'un mot commençant par b doit être rejeté immédiatement.</p>
+<p>On peut toujours rendre un automate complet, sans changer le langage reconnu, grâce à la <strong>méthode du puits</strong> : on ajoute un état P (le « puits »), non final, muni d'une boucle sur chaque lettre (δ(P, a) = P pour tout a ∈ Σ), puis on redirige vers P toutes les transitions manquantes de l'automate d'origine.</p>` +
+          automatonSvg(
+            { q0:[110,170], q1:[330,100], P:[330,260] },
+            [['q0','q1','a'], ['q0','P','b'], ['q1','q1','a, b'], ['P','P','a, b']],
+            'q0', ['q1'], 460, 320
+          ) +
+          `<p>L'automate est maintenant complet : depuis q0, la lettre b mène désormais au puits P, dont on ne peut plus jamais s'échapper — ce qui correspond bien au rejet de tout mot commençant par b.</p>`
+      },
+      {
+        id: "etats-accessibles-utiles",
+        title: "États accessibles, co-accessibles, utiles",
+        meta: "Trois notions à distinguer pour repérer les états inutiles",
+        content: `<p>Soit A = (Q, Σ, δ, q0, F) un AFD. Un état q ∈ Q est :</p>
+<ul>
+<li><strong>accessible</strong> s'il existe un mot w tel que δ(q0, w) = q — q est atteignable depuis l'état initial ;</li>
+<li><strong>co-accessible</strong> s'il existe un mot w tel que δ(q, w) ∈ F — on peut atteindre un état final <strong>depuis</strong> q ;</li>
+<li><strong>utile</strong> s'il est à la fois accessible et co-accessible.</li>
+</ul>
+<p>Un état qui n'est pas utile est dit <strong>inutile</strong> : soit on ne peut jamais l'atteindre depuis q0, soit on peut l'atteindre mais on ne pourra plus jamais accepter le mot en cours une fois qu'on y est. Dans les deux cas, il ne joue aucun rôle dans le langage reconnu.</p>` +
+          automatonSvg(
+            { q0:[70,150], q1:[220,150], q2:[370,150], q3:[220,280], q4:[400,280] },
+            [
+              ['q0','q1','a'], ['q0','q3','b'],
+              ['q1','q2','a'], ['q1','q1','b'],
+              ['q2','q2','a, b'],
+              ['q3','q3','a, b'],
+              ['q4','q4','a, b']
+            ],
+            'q0', ['q2'], 460, 340,
+            {
+              q0: { stroke:'var(--accent)', fill:'var(--accent-soft)' },
+              q1: { stroke:'var(--accent)', fill:'var(--accent-soft)' },
+              q3: { stroke:'var(--diff-hard)', fill:'var(--diff-hard-bg)' },
+              q4: { stroke:'var(--ink-faint)', fill:'var(--paper)', dashed:true }
+            }
+          ) +
+          `<p>Sur cet automate (final : q2) :</p>
+<ul>
+<li>q0, q1 et q2 (en turquoise) sont <strong>utiles</strong> : tous trois sont accessibles depuis q0, et depuis chacun on peut atteindre q2.</li>
+<li>q3 (en rose) est <strong>accessible</strong> (q0 → q3 sur b) mais <strong>pas co-accessible</strong> : une fois dans q3, on y reste indéfiniment (boucle sur a et b) sans jamais pouvoir atteindre q2. C'est un état mort.</li>
+<li>q4 (en pointillés) n'est <strong>pas accessible</strong> du tout : aucune transition, depuis aucun état atteignable, ne mène jusqu'à lui.</li>
+</ul>`
+      },
+      {
+        id: "afd-emonde",
+        title: "Automate émondé",
+        meta: "Ne garder que les états utiles, sans changer le langage reconnu",
+        content: `<p>Un AFD est dit <strong>émondé</strong> si tous ses états sont utiles, c'est-à-dire s'il ne contient aucun état inutile au sens de la fiche précédente.</p>
+<div class="callout"><strong>Proposition.</strong> Pour tout AFD A = (Q, Σ, δ, q0, F), il existe un AFD émondé A′ équivalent à A (c'est-à-dire L(A′) = L(A)). On l'obtient en supprimant de A tous ses états inutiles, ainsi que toutes les transitions qui les impliquent.</div>
+<p><strong>Justification.</strong> Notons Q_utile l'ensemble des états utiles de A, et A′ l'automate obtenu en ne gardant que ces états (et les transitions de δ dont la source et le but sont tous deux dans Q_utile). A′ n'étant qu'une restriction de A, tout mot accepté par A′ l'est aussi par A : L(A′) ⊆ L(A).</p>
+<p>Réciproquement, soit w un mot accepté par A. Le chemin suivi par A en lisant w part de q0 et se termine dans un état final. Chaque état q traversé en cours de lecture est <strong>accessible</strong> (on l'atteint depuis q0 avec le préfixe de w déjà lu) et <strong>co-accessible</strong> (on rejoint un état final avec le suffixe de w restant à lire) : il est donc utile. Le chemin suivi sur w reste ainsi entièrement dans Q_utile, donc il existe aussi dans A′ — et w est accepté par A′. On a donc L(A) ⊆ L(A′), ce qui achève l'égalité.</p>
+<p>En reprenant l'automate de la fiche précédente et en supprimant ses deux états inutiles (q3 et q4), on obtient l'automate émondé équivalent suivant :</p>` +
+          automatonSvg(
+            { q0:[100,150], q1:[260,150], q2:[420,150] },
+            [
+              ['q0','q1','a'],
+              ['q1','q2','a'], ['q1','q1','b'],
+              ['q2','q2','a, b']
+            ],
+            'q0', ['q2'], 480, 220
+          ) +
+          `<p>Remarquez que l'automate émondé n'est pas forcément complet, même si l'automate de départ l'était : ici, la transition depuis q0 sur b a disparu en même temps que q3, puisque son but n'existe plus.</p>`
       }
     ]
   }
