@@ -330,6 +330,11 @@ footer.sitefoot{max-width:720px;margin:60px auto 0;padding:20px 32px 40px;color:
 .dist-table th,.dist-table td{border:1px solid var(--paper-border);padding:7px 11px;text-align:center;}
 .dist-table thead th{background:var(--accent-soft);color:var(--accent-strong);font-family:var(--font-display);font-weight:600;}
 .dist-table tbody th{background:var(--accent-soft);color:var(--accent-strong);font-family:var(--font-display);font-weight:600;text-align:left;}
+.statement .code-block code,.intro-block .code-block code{background:none;padding:0;border-radius:0;color:var(--code-text);font-size:13px;}
+.dist-table.cmp td{text-align:left;font-family:var(--font-body);font-size:13.5px;line-height:1.45;}
+.dist-table.cmp thead th:first-child{background:transparent;}
+.dist-table .ok{color:var(--diff-easy);font-weight:600;}
+.dist-table .ko{color:var(--diff-hard);font-weight:600;}
 .graph-diagram{margin:18px 0;max-width:460px;}
 .graph-diagram svg{width:100%;height:auto;display:block;}
 
@@ -488,6 +493,16 @@ function matrixTable(nodes, matrix){
   });
   html += '</tbody></table></div>';
   return html;
+}
+
+function simpleTable(headers, rows, cls){
+  return '<div class="table-wrap"><table class="dist-table' + (cls ? ' ' + cls : '') + '"><thead><tr>' +
+    headers.map(function(h){ return '<th>' + h + '</th>'; }).join('') +
+    '</tr></thead><tbody>' +
+    rows.map(function(r){
+      return '<tr><th>' + r[0] + '</th>' + r.slice(1).map(function(c){ return '<td>' + c + '</td>'; }).join('') + '</tr>';
+    }).join('') +
+    '</tbody></table></div>';
 }
 
 function algoSectionsGrid(){
@@ -1031,6 +1046,8 @@ const COURSE = [
    ============================================================ */
 const SHORTEST_PATH_INTRO = `<p>Les algorithmes de plus court chemin cherchent, dans un graphe pondéré, le chemin de coût total minimal entre deux sommets (ou entre tous les couples de sommets). Pour comparer les trois algorithmes ci-dessous sur un pied d'égalité, on les applique tous au même graphe non orienté, à poids positifs :</p>` + graphSvg(null, null);
 
+const MST_INTRO = `<p>Dans un graphe non orienté pondéré connexe, un <strong>arbre couvrant de poids minimal</strong> (ACPM) est un arbre couvrant dont la somme des poids des arêtes est la plus petite possible (voir la fiche « Arbre couvrant » dans l'onglet Notions). On reprend le même graphe d'exemple que pour les plus courts chemins :</p>` + graphSvg(null, null);
+
 const ALGO_SECTIONS = [
   {
     id: "plus-court-chemin",
@@ -1133,6 +1150,46 @@ const ALGO_SECTIONS = [
           `<li>Depuis C, on découvre un meilleur chemin vers <strong>B</strong> (g = 3, f = 3+7 = 10), qui devient prioritaire à son tour.</li>` +
           `<li>La recherche converge vers <strong>F</strong> avec un coût total g(F) = <strong>13</strong>, en suivant le chemin A → C → B → D → E → F — exactement le même chemin optimal que Dijkstra, mais évalué dans un ordre différent, guidé par l'heuristique.</li></ul>` +
           graphSvg([['A','C'],['C','B'],['B','D'],['D','E'],['E','F']], ['A','F'])
+      }
+    ]
+  },
+  {
+    id: "arbre-couvrant-minimal",
+    title: "Arbre couvrant minimal",
+    description: "Kruskal : construire un arbre couvrant de poids minimal en ajoutant les arêtes par poids croissant.",
+    intro: MST_INTRO,
+    algos: [
+      {
+        id: "kruskal",
+        title: "Kruskal",
+        meta: "Arbre couvrant minimal · glouton sur les arêtes · O(E log E)",
+        description: `<p>L'algorithme de Kruskal construit un arbre couvrant de poids minimal d'un graphe non orienté pondéré <strong>connexe</strong>. Il est glouton : on examine les arêtes par <strong>poids croissant</strong> et on garde une arête si elle relie deux sommets qui ne sont pas encore connectés par les arêtes déjà retenues — c'est-à-dire si elle ne crée aucun cycle.</p><p>Pour tester rapidement si deux sommets sont déjà connectés, on maintient les <strong>composantes connexes</strong> de la forêt en cours de construction avec une structure <em>union-find</em> : <code>trouver(s)</code> renvoie le représentant de la composante de s, et <code>union(u, v)</code> fusionne les composantes de u et v.</p><p>Si le graphe n'est pas connexe, l'algorithme renvoie un arbre couvrant minimal pour chacune de ses composantes connexes (une forêt couvrante).</p>`,
+        pseudocode: `fonction kruskal(G):
+    T ← ensemble vide d'arêtes
+    pour chaque sommet s de G:
+        créer_classe(s)                  (union-find)
+
+    trier les arêtes de G par poids croissant
+
+    pour chaque arête (u, v) dans cet ordre:
+        si trouver(u) ≠ trouver(v):      (composantes différentes)
+            ajouter (u, v) à T
+            union(u, v)
+
+    retourner T`,
+        exampleHtml: `<p>On applique Kruskal au graphe d'exemple (6 sommets, donc l'arbre aura 5 arêtes). Arêtes triées par poids croissant : B–C (1), A–C (2), D–E (2), E–F (3), A–B (4), B–D (5), D–F (6), C–D (8), C–E (10).</p>` +
+          simpleTable(['Étape', 'Arête', 'Poids', 'Composantes avant', 'Décision'], [
+            ['1', 'B–C', '1', '{A} {B} {C} {D} {E} {F}', '<span class="ok">retenue</span>'],
+            ['2', 'A–C', '2', '{A} {B,C} {D} {E} {F}', '<span class="ok">retenue</span>'],
+            ['3', 'D–E', '2', '{A,B,C} {D} {E} {F}', '<span class="ok">retenue</span>'],
+            ['4', 'E–F', '3', '{A,B,C} {D,E} {F}', '<span class="ok">retenue</span>'],
+            ['5', 'A–B', '4', '{A,B,C} {D,E,F}', '<span class="ko">rejetée</span> (A et B déjà connectés : cycle A–B–C)'],
+            ['6', 'B–D', '5', '{A,B,C} {D,E,F}', '<span class="ok">retenue</span>']
+          ]) +
+          `<p>Après l'étape 6, il ne reste qu'une seule composante {A,B,C,D,E,F} : on a retenu n − 1 = 5 arêtes, on peut s'arrêter (les arêtes D–F, C–D et C–E seraient toutes rejetées).</p>` +
+          graphSvg([['B','C'],['A','C'],['D','E'],['E','F'],['B','D']], ['A','B','C','D','E','F']) +
+          `<p>L'arbre couvrant minimal obtenu est formé des arêtes B–C, A–C, D–E, E–F et B–D, pour un poids total de 1 + 2 + 2 + 3 + 5 = <strong>13</strong>. Comme les deux arêtes de poids 2 sont interchangeables dans le tri, l'ordre des étapes 2 et 3 peut changer, mais pas le poids final.</p>
+<p><strong>Complexité.</strong> Le tri des arêtes coûte O(E log E), c'est-à-dire O(E log V) puisque E ≤ V². Avec union-find (compression de chemin et union par rang), les opérations <code>trouver</code> et <code>union</code> coûtent un temps quasi constant : le tri domine, d'où O(E log E) au total.</p>`
       }
     ]
   }
@@ -1261,7 +1318,7 @@ const NOTIONS_SECTIONS = [
   {
     id: "automates-notions",
     title: "Automates",
-    description: "Automates finis déterministes : définition, complétude, états utiles et automate émondé.",
+    description: "Automates finis déterministes et non déterministes : définitions, complétude, états utiles, émondage, déterminisation.",
     intro: "",
     notions: [
       {
@@ -1358,6 +1415,201 @@ const NOTIONS_SECTIONS = [
             'q0', ['q2'], 480, 220
           ) +
           `<p>Remarquez que l'automate émondé n'est pas forcément complet, même si l'automate de départ l'était : ici, la transition depuis q0 sur b a disparu en même temps que q3, puisque son but n'existe plus.</p>`
+      },
+      {
+        id: "afnd-definition",
+        title: "Automate fini non déterministe",
+        meta: "Différences avec un AFD, calculs multiples, mot reconnu",
+        content: `<p>Un <strong>automate fini non déterministe</strong> (AFND) est un quintuplet <strong>A = (Q, Σ, δ, I, F)</strong> où Q, Σ et F sont définis comme pour un AFD, et où :</p>
+<ul>
+<li><strong>I ⊆ Q</strong> est l'ensemble des <strong>états initiaux</strong> : il peut y en avoir plusieurs ;</li>
+<li><strong>δ : Q × Σ → P(Q)</strong> associe à un état et à une lettre un <strong>ensemble</strong> d'états, éventuellement vide ou de plusieurs éléments. De manière équivalente, on se donne un ensemble de transitions q —a→ q′, sans contrainte d'unicité.</li>
+</ul>
+<p>Certains cours imposent un unique état initial q0 ; tout ce qui suit fonctionne de la même façon.</p>
+<p><strong>Différences avec un AFD.</strong></p>` +
+          simpleTable(['', 'AFD', 'AFND'], [
+            ['États initiaux', 'un seul : q0', 'un ensemble I ⊆ Q'],
+            ['Transition', 'δ(q, a) est au plus un état', 'δ(q, a) est un ensemble d’états : 0, 1 ou plusieurs'],
+            ['Lecture d’un mot', 'un seul calcul possible (qui peut se bloquer)', 'plusieurs calculs possibles, ou aucun'],
+            ['Mot reconnu', 'l’unique calcul se termine dans F', 'au moins un calcul réussi va d’un état de I à un état de F']
+          ], 'cmp') +
+          `<p>Un <strong>calcul</strong> de A sur un mot w = a<sub>1</sub>a<sub>2</sub>…a<sub>n</sub> est une suite d'états r<sub>0</sub>, r<sub>1</sub>, …, r<sub>n</sub> telle que r<sub>0</sub> ∈ I et r<sub>i</sub> ∈ δ(r<sub>i−1</sub>, a<sub>i</sub>) pour tout i. Il est <strong>réussi</strong> si r<sub>n</sub> ∈ F. Un mot w est <strong>reconnu</strong> par A s'il existe <em>au moins un</em> calcul réussi sur w, et le <strong>langage reconnu</strong> L(A) est l'ensemble des mots reconnus. Un calcul qui arrive dans un état sans transition sur la lettre suivante est bloqué : il n'est pas réussi.</p>` +
+          automatonSvg(
+            { q0:[100,130], q1:[250,130], q2:[400,130] },
+            [['q0','q0','a, b'], ['q0','q1','a'], ['q1','q2','b']],
+            'q0', ['q2'], 480, 210
+          ) +
+          `<p>Cet AFND (Σ = {a, b}) est non déterministe parce que, depuis q0, la lettre a mène à la fois à q0 et à q1. Il reconnaît les mots qui <strong>se terminent par ab</strong> : l'automate « devine » à quel moment commence le suffixe ab.</p>
+<ul>
+<li>Le mot <code>aab</code> a deux calculs : q0 → q0 → q0 → q0 (échec, q0 n'est pas final) et q0 → q0 → q1 → q2 (réussi). Il est <strong>reconnu</strong>.</li>
+<li>Le mot <code>aba</code> n'a aucun calcul réussi : le calcul q0 → q1 → q2 est bloqué sur la dernière lettre (δ(q2, a) = ∅), et les autres finissent en q0 ou en q1. Il est <strong>rejeté</strong>.</li>
+</ul>
+<p>Tout AFD est un cas particulier d'AFND (on prend I = {q0} et des ensembles δ(q, a) de taille au plus 1). Le théorème de la fiche suivante montre que la réciproque est vraie pour les langages reconnus.</p>`
+      },
+      {
+        id: "afd-afnd-equivalence",
+        title: "Équivalence AFD / AFND",
+        meta: "Théorème et preuve par la construction des parties",
+        content: `<div class="callout"><strong>Théorème.</strong> Un langage est reconnaissable par un AFD si et seulement s'il est reconnaissable par un AFND.</div>
+<p>Autrement dit, le non-déterminisme ne permet de reconnaître aucun nouveau langage : il permet seulement de décrire certains langages avec des automates plus petits.</p>
+<p><strong>(⇒) Un AFD est un AFND.</strong> Soit A = (Q, Σ, δ, q0, F) un AFD. L'AFND A′ = (Q, Σ, δ′, {q0}, F), avec δ′(q, a) = {δ(q, a)} quand δ(q, a) est défini et δ′(q, a) = ∅ sinon, a exactement les mêmes calculs que A (au plus un par mot). Donc L(A′) = L(A).</p>
+<p><strong>(⇐) Construction des parties.</strong> Soit A = (Q, Σ, δ, I, F) un AFND. Pour une partie S ⊆ Q et une lettre a, on note δ(S, a) = ⋃<sub>q ∈ S</sub> δ(q, a). On définit l'automate
+<strong>A<sub>D</sub> = (P(Q), Σ, δ<sub>D</sub>, I, F<sub>D</sub>)</strong> par :</p>
+<ul>
+<li>les états de A<sub>D</sub> sont les <strong>parties</strong> de Q ;</li>
+<li>l'état initial est la partie <strong>I</strong> ;</li>
+<li>δ<sub>D</sub>(S, a) = δ(S, a) pour toute partie S et toute lettre a ;</li>
+<li>F<sub>D</sub> = { S ⊆ Q | S ∩ F ≠ ∅ } : une partie est finale si elle contient au moins un état final de A.</li>
+</ul>
+<p>A<sub>D</sub> est bien un AFD, et il est complet : δ<sub>D</sub>(S, a) est toujours défini.</p>
+<p><strong>Lemme.</strong> Pour tout mot w, notons R(w) l'ensemble des états r de A tels qu'il existe un calcul de A sur w, partant d'un état de I, qui se termine en r. Alors δ<sub>D</sub>*(I, w) = R(w).</p>
+<p><em>Preuve par récurrence sur |w|.</em> Pour w = ε, les calculs sont de longueur 0 : R(ε) = I = δ<sub>D</sub>*(I, ε). Si w = ua, un état q est dans R(ua) si et seulement si il existe p ∈ R(u) avec q ∈ δ(p, a), donc R(ua) = δ(R(u), a). Par hypothèse de récurrence, R(u) = δ<sub>D</sub>*(I, u), d'où δ<sub>D</sub>*(I, ua) = δ<sub>D</sub>(R(u), a) = δ(R(u), a) = R(ua). ∎</p>
+<p><strong>Conclusion.</strong> Pour tout mot w : w ∈ L(A<sub>D</sub>) ⟺ δ<sub>D</sub>*(I, w) ∈ F<sub>D</sub> ⟺ R(w) ∩ F ≠ ∅ ⟺ il existe un calcul réussi de A sur w ⟺ w ∈ L(A). Donc L(A<sub>D</sub>) = L(A), ce qui prouve que le langage reconnu par l'AFND A l'est aussi par un AFD. ∎</p>
+<p><strong>Coût.</strong> A<sub>D</sub> a 2<sup>|Q|</sup> états : l'explosion est possible. C'est un résultat classique que le langage des mots dont la n-ième lettre avant la fin est un a est reconnu par un AFND à n + 1 états, alors que tout AFD qui le reconnaît a au moins 2<sup>n</sup> états. En pratique, on ne construit que les parties réellement atteintes depuis I (fiche suivante).</p>`
+      },
+      {
+        id: "determinisation",
+        title: "Passage d'un AFND à un AFD",
+        meta: "Déterminisation : construction des parties accessibles",
+        content: `<p>La preuve du théorème fournit la méthode, appelée <strong>déterminisation</strong>. Au lieu de construire les 2<sup>|Q|</sup> parties de Q, on ne construit que celles qui sont <strong>accessibles</strong> depuis la partie initiale I :</p>
+<ol>
+<li>L'état initial de l'AFD est la partie <strong>I</strong>.</li>
+<li>Pour chaque partie S déjà construite et chaque lettre a, on calcule δ(S, a) = ⋃<sub>q ∈ S</sub> δ(q, a). Si cette partie est nouvelle, on l'ajoute.</li>
+<li>On s'arrête quand plus aucune partie nouvelle n'apparaît.</li>
+<li>Les états finaux sont les parties qui contiennent au moins un état final de l'AFND.</li>
+</ol>` +
+          codeBlock(`fonction determiniser(A = (Q, Σ, δ, I, F)):
+    départ ← I
+    états ← {départ}
+    à_traiter ← pile contenant départ
+
+    tant que à_traiter n'est pas vide:
+        S ← dépiler(à_traiter)
+        pour chaque lettre a de Σ:
+            T ← union des δ(q, a) pour q dans S
+            δ_D(S, a) ← T
+            si T n'est pas dans états:
+                ajouter T à états
+                empiler T
+
+    F_D ← { S dans états | S contient un état de F }
+    retourner (états, Σ, δ_D, départ, F_D)`, 'code-det-pseudo', 'pseudocode') +
+          `<p><strong>Exemple.</strong> On déterminise l'AFND reconnaissant les mots qui se terminent par ab :</p>` +
+          automatonSvg(
+            { q0:[100,130], q1:[250,130], q2:[400,130] },
+            [['q0','q0','a, b'], ['q0','q1','a'], ['q1','q2','b']],
+            'q0', ['q2'], 480, 210
+          ) +
+          `<p>On part de S0 = {q0}. Calculs des transitions des parties rencontrées :</p>
+<ul>
+<li>S0 = {q0} sur a : δ(q0, a) = {q0, q1}. Nouvelle partie : <strong>S1 = {q0, q1}</strong>. Sur b : δ(q0, b) = {q0} = S0.</li>
+<li>S1 sur a : δ(q0, a) ∪ δ(q1, a) = {q0, q1} ∪ ∅ = S1. Sur b : δ(q0, b) ∪ δ(q1, b) = {q0} ∪ {q2} = {q0, q2}. Nouvelle partie : <strong>S2 = {q0, q2}</strong>.</li>
+<li>S2 sur a : δ(q0, a) ∪ δ(q2, a) = {q0, q1} ∪ ∅ = S1. Sur b : {q0} ∪ ∅ = S0.</li>
+</ul>
+<p>Plus aucune partie nouvelle : on s'arrête avec 3 états au lieu de 2<sup>3</sup> = 8.</p>` +
+          simpleTable(['État de l’AFD', 'Partie', 'Sur a', 'Sur b', 'Final ?'], [
+            ['S0 (initial)', '{q0}', 'S1', 'S0', 'non'],
+            ['S1', '{q0, q1}', 'S1', 'S2', 'non'],
+            ['S2', '{q0, q2}', 'S1', 'S0', 'oui (contient q2)']
+          ]) +
+          automatonSvg(
+            { S0:[90,180], S1:[250,80], S2:[410,180] },
+            [['S0','S1','a'], ['S0','S0','b'], ['S1','S1','a'], ['S1','S2','b'], ['S2','S1','a'], ['S2','S0','b']],
+            'S0', ['S2'], 480, 250
+          ) +
+          `<p>L'AFD obtenu est complet et reconnaît bien les mêmes mots : <code>aab</code> mène en S0 → S1 → S1 → S2 (final, reconnu) et <code>aba</code> en S0 → S1 → S2 → S1 (non final, rejeté).</p>
+<p><strong>Remarques.</strong></p>
+<ul>
+<li>Si une partie S n'a aucune transition sur une lettre a, on obtient δ(S, a) = ∅. La partie vide devient alors un état <strong>puits</strong> (non final, bouclant sur toutes les lettres). L'automate obtenu est complet ; si on préfère un automate partiel, on supprime ce puits par la simplification des états inutiles (fiche suivante).</li>
+<li>Par construction, tous les états de l'AFD sont accessibles, mais ils ne sont pas forcément tous co-accessibles : c'est le cas du puits ∅.</li>
+<li>Le nombre de parties construites est au plus 2<sup>|Q|</sup>, mais il est très souvent bien plus petit.</li>
+</ul>`
+      },
+      {
+        id: "simplification-etats-inutiles",
+        title: "Simplification des états inutiles",
+        meta: "Procédé : parcours depuis l'initial, parcours inverse depuis les finaux",
+        content: `<p>Pour transformer un automate A (AFD ou AFND) en un automate <strong>émondé</strong> équivalent, on supprime ses états inutiles (voir la fiche « Automate émondé » pour la proposition qui garantit que le langage reconnu ne change pas). Le procédé comporte trois étapes :</p>
+<ol>
+<li><strong>États accessibles.</strong> On fait un parcours (en profondeur ou en largeur) du graphe de l'automate à partir de l'état initial (de tous les états de I pour un AFND). Les états visités sont les états accessibles.</li>
+<li><strong>États co-accessibles.</strong> On fait un parcours à partir des états finaux dans le <strong>graphe inverse</strong> : on suit les transitions à l'envers, d'un état vers ses prédécesseurs. Les états visités sont ceux depuis lesquels on peut atteindre un état final.</li>
+<li><strong>Restriction.</strong> On garde les états utiles, c'est-à-dire l'intersection des deux ensembles, avec les transitions dont la source et le but sont conservés.</li>
+</ol>` +
+          codeBlock(`fonction accessibles(A):
+    vus ← {q0}
+    à_traiter ← pile contenant q0
+    tant que à_traiter n'est pas vide:
+        q ← dépiler(à_traiter)
+        pour chaque lettre a de Σ:
+            si δ(q, a) est défini et n'est pas dans vus:
+                ajouter δ(q, a) à vus
+                empiler δ(q, a)
+    retourner vus
+
+fonction co_accessibles(A):
+    vus ← F
+    à_traiter ← pile contenant tous les états de F
+    tant que à_traiter n'est pas vide:
+        p ← dépiler(à_traiter)
+        pour chaque transition q --a--> p de A:      (prédécesseurs de p)
+            si q n'est pas dans vus:
+                ajouter q à vus
+                empiler q
+    retourner vus
+
+fonction emonder(A):
+    U ← accessibles(A) ∩ co_accessibles(A)
+    δ' ← transitions de δ dont la source et le but sont dans U
+    retourner (U, Σ, δ', q0, F ∩ U)`, 'code-emondage-pseudo', 'pseudocode') +
+          `<p><strong>Exemple.</strong> On émonde l'AFD suivant (Σ = {a, b}, un seul état final : q3) :</p>` +
+          automatonSvg(
+            { q0:[90,200], q1:[250,200], q3:[410,200], q2:[90,80], q4:[410,300], q5:[250,300] },
+            [
+              ['q0','q1','a'], ['q0','q2','b'],
+              ['q1','q3','a'], ['q1','q1','b'],
+              ['q2','q2','a, b'], ['q3','q3','a, b'],
+              ['q4','q3','a'], ['q4','q5','b'],
+              ['q5','q5','a, b']
+            ],
+            'q0', ['q3'], 480, 340,
+            {
+              q0: { stroke:'var(--accent)', fill:'var(--accent-soft)' },
+              q1: { stroke:'var(--accent)', fill:'var(--accent-soft)' },
+              q2: { stroke:'var(--diff-hard)', fill:'var(--diff-hard-bg)' },
+              q4: { stroke:'var(--diff-medium)', fill:'var(--diff-medium-bg)', dashed:true },
+              q5: { stroke:'var(--ink-faint)', fill:'var(--paper)', dashed:true }
+            }
+          ) +
+          simpleTable(['Étape', 'Calcul', 'Ensemble obtenu'], [
+            ['Accessibles, départ', 'on part de q0', '{q0}'],
+            ['Accessibles, tour 1', 'depuis q0 : q1 (sur a), q2 (sur b)', '{q0, q1, q2}'],
+            ['Accessibles, tour 2', 'depuis q1 : q3 (sur a) et q1 ; depuis q2 : q2', '{q0, q1, q2, q3}'],
+            ['Accessibles, tour 3', 'depuis q3 : seulement q3, rien de nouveau : arrêt', '{q0, q1, q2, q3}'],
+            ['Co-accessibles, départ', 'F = {q3}', '{q3}'],
+            ['Co-accessibles, tour 1', 'prédécesseurs de q3 : q1 (sur a), q4 (sur a), q3', '{q1, q3, q4}'],
+            ['Co-accessibles, tour 2', 'prédécesseurs de q1 : q0 (sur a) et q1 ; de q4 : aucun', '{q0, q1, q3, q4}'],
+            ['Co-accessibles, tour 3', 'prédécesseurs de q0 : aucun, rien de nouveau : arrêt', '{q0, q1, q3, q4}'],
+            ['Intersection', '{q0, q1, q2, q3} ∩ {q0, q1, q3, q4}', '<strong>{q0, q1, q3}</strong>']
+          ], 'cmp') +
+          `<ul>
+<li>q0, q1 et q3 (turquoise) sont <strong>utiles</strong> : on les conserve.</li>
+<li>q2 (rose) est accessible mais pas co-accessible : c'est un état mort, on ne peut plus rejoindre q3 une fois dedans.</li>
+<li>q4 (ocre, pointillés) est co-accessible (q4 —a→ q3) mais pas accessible : aucun chemin ne part de q0 vers lui.</li>
+<li>q5 (gris, pointillés) n'est ni accessible ni co-accessible.</li>
+</ul>
+<p>On supprime q2, q4, q5 et toutes les transitions qui les touchent. L'automate émondé obtenu reconnaît le même langage, l'ensemble des mots a·b*·a·Σ* :</p>` +
+          automatonSvg(
+            { q0:[100,130], q1:[260,130], q3:[420,130] },
+            [['q0','q1','a'], ['q1','q1','b'], ['q1','q3','a'], ['q3','q3','a, b']],
+            'q0', ['q3'], 480, 210
+          ) +
+          `<p><strong>Remarques.</strong></p>
+<ul>
+<li><strong>Coût.</strong> Chaque parcours visite chaque état et chaque transition au plus une fois : le temps est linéaire en la taille de l'automate.</li>
+<li><strong>AFND.</strong> Le procédé est identique : les successeurs de q sont les états des ensembles δ(q, a), et le parcours des accessibles part de tous les états de I.</li>
+<li><strong>Après une déterminisation.</strong> Tous les états sont accessibles par construction, mais l'état ∅ éventuel est un puits non co-accessible : l'émondage le supprime, et rend l'automate partiel.</li>
+<li><strong>Langage vide.</strong> Si L(A) = ∅, aucun état n'est utile (un état utile fournirait un mot reconnu) : l'automate émondé est alors l'automate vide, sans aucun état.</li>
+</ul>`
       }
     ]
   }
