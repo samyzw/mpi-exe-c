@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -505,6 +506,36 @@ function simpleTable(headers, rows, cls){
     '</tbody></table></div>';
 }
 
+/* ---- schéma du théorème de Kleene : ER <-> AFND <-> AFD ---- */
+function kleeneSvg(){
+  __autoIdCounter++;
+  const m = 'kl-arrow-' + __autoIdCounter;
+  const txt = function(x, y, s, size, weight, fill){
+    return '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-weight="' + weight + '" font-size="' + size + '" fill="' + fill + '">' + s + '</text>';
+  };
+  const box = function(x, w){
+    return '<rect x="' + x + '" y="40" width="' + w + '" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>';
+  };
+  const arrow = function(x1, x2, y, n){
+    const cx = (x1 + x2) / 2;
+    return '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="var(--ink-soft)" stroke-width="1.8" marker-end="url(#' + m + ')"/>' +
+      '<circle cx="' + cx + '" cy="' + y + '" r="9" fill="var(--paper)" stroke="var(--ink-faint)" stroke-width="1.2"/>' +
+      '<text x="' + cx + '" y="' + (y + 4) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink)">' + n + '</text>';
+  };
+  let svg = '<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg">';
+  svg += '<defs><marker id="' + m + '" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--ink-soft)"/></marker></defs>';
+  svg += box(10, 110) + box(205, 110) + box(400, 110);
+  svg += txt(65, 68, 'Expression', 13, 600, 'var(--ink)') + txt(65, 86, 'régulière', 13, 600, 'var(--ink)');
+  svg += txt(260, 76, 'AFND', 14, 600, 'var(--ink)') + txt(455, 76, 'AFD', 14, 600, 'var(--ink)');
+  svg += arrow(124, 201, 60, '1') + arrow(201, 124, 86, '2');
+  svg += arrow(319, 396, 60, '3') + arrow(396, 319, 86, '4');
+  svg += txt(65, 128, 'langage rationnel', 11.5, 400, 'var(--ink-faint)');
+  svg += '<line x1="205" y1="114" x2="510" y2="114" stroke="var(--ink-faint)" stroke-width="1.2"/>';
+  svg += txt(357, 133, 'langage reconnaissable', 11.5, 400, 'var(--ink-faint)');
+  svg += '</svg>';
+  return '<div class="hero-diagram graph-diagram">' + svg + '</div>';
+}
+
 function algoSectionsGrid(){
   return ALGO_SECTIONS.map(function(sec){
     const soon = sec.algos.length === 0;
@@ -599,8 +630,10 @@ function automatonSvg(nodes, transitions, initial, finals, viewW, viewH, stateSt
     }
   });
 
-  const ip = nodes[initial];
-  svg += '<line x1="' + (ip[0]-46) + '" y1="' + ip[1] + '" x2="' + (ip[0]-19) + '" y2="' + ip[1] + '" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#' + markerId + ')"/>';
+  [].concat(initial).forEach(function(init){
+    const ip = nodes[init];
+    svg += '<line x1="' + (ip[0]-46) + '" y1="' + ip[1] + '" x2="' + (ip[0]-19) + '" y2="' + ip[1] + '" stroke="var(--ink-soft)" stroke-width="2" marker-end="url(#' + markerId + ')"/>';
+  });
 
   Object.keys(nodes).forEach(function(n){
     const p = nodes[n];
@@ -1612,6 +1645,238 @@ fonction emonder(A):
 </ul>`
       }
     ]
+  },
+  {
+    id: "langages-notions",
+    title: "Langages et expressions régulières",
+    description: "Mots, langages, expressions régulières, langages reconnaissables et théorème de Kleene : le lien entre langages, automates et expressions.",
+    intro: "",
+    notions: [
+      {
+        id: "mots-langages",
+        title: "Mots et langages",
+        meta: "Alphabet, mot, concaténation, facteurs, langage et opérations",
+        content: `<p>Un <strong>alphabet</strong> Σ est un ensemble fini non vide dont les éléments sont appelés <strong>lettres</strong>. Un <strong>mot</strong> sur Σ est une suite finie de lettres ; on l'écrit en juxtaposant ses lettres, par exemple <code>abba</code> sur Σ = {a, b}.</p>
+<ul>
+<li>La <strong>longueur</strong> |w| est le nombre de lettres de w ; |w|<sub>a</sub> est le nombre d'occurrences de la lettre a dans w. Ainsi |abba| = 4 et |abba|<sub>a</sub> = 2.</li>
+<li>Le <strong>mot vide</strong>, noté ε, est le mot de longueur 0.</li>
+<li>Σ* désigne l'ensemble de tous les mots sur Σ (mot vide compris) et Σ⁺ = Σ* \\ {ε}.</li>
+</ul>
+<p>La <strong>concaténation</strong> de deux mots u et v, notée uv ou u·v, est le mot formé de u suivi de v. Elle est associative, admet ε pour élément neutre (εu = uε = u), mais elle n'est pas commutative (ab ≠ ba). On a |uv| = |u| + |v|.</p>
+<p><strong>Parties d'un mot.</strong> Pour w = abaab :</p>` +
+          simpleTable(['Notion', 'Définition', 'Exemples pour w = abaab'], [
+            ['préfixe', 'début de w : w = uv', 'ε, a, ab, aba, abaa, abaab'],
+            ['suffixe', 'fin de w : w = vu', 'ε, b, ab, aab, baab, abaab'],
+            ['facteur', 'lettres consécutives de w : w = xuy', 'ba, baa, aa, aba'],
+            ['sous-mot', 'lettres de w dans l’ordre, pas forcément consécutives', 'aaa (1ʳᵉ, 3ᵉ et 4ᵉ lettres), bb, abb']
+          ], 'cmp') +
+          `<p>Tout préfixe et tout suffixe est un facteur, et tout facteur est un sous-mot ; les réciproques sont fausses (aaa est un sous-mot de abaab mais pas un facteur).</p>
+<p>Un <strong>langage</strong> sur Σ est une partie L ⊆ Σ*, c'est-à-dire un ensemble de mots, fini ou infini. Il ne faut pas confondre le langage vide ∅ (aucun mot) avec le langage {ε} (un seul mot, le mot vide).</p>
+<p>Exemples sur Σ = {a, b} : les mots de longueur paire ; les mots qui commencent par a ; les mots contenant exactement deux b ; {aⁿbⁿ | n ≥ 0} = {ε, ab, aabb, aaabbb, …}.</p>
+<p><strong>Opérations sur les langages.</strong> Comme un langage est un ensemble, on dispose des opérations ensemblistes, auxquelles s'ajoutent des opérations propres aux mots :</p>` +
+          simpleTable(['Opération', 'Notation', 'Définition'], [
+            ['union', 'L<sub>1</sub> ∪ L<sub>2</sub>', 'mots qui sont dans L<sub>1</sub> ou dans L<sub>2</sub>'],
+            ['intersection', 'L<sub>1</sub> ∩ L<sub>2</sub>', 'mots qui sont dans L<sub>1</sub> et dans L<sub>2</sub>'],
+            ['complémentaire', 'Σ* \\ L', 'mots de Σ* qui ne sont pas dans L'],
+            ['concaténation', 'L<sub>1</sub>·L<sub>2</sub>', '{uv | u ∈ L<sub>1</sub>, v ∈ L<sub>2</sub>}'],
+            ['puissance', 'L<sup>n</sup>', 'L<sup>0</sup> = {ε} et L<sup>n+1</sup> = L·L<sup>n</sup>'],
+            ['étoile', 'L*', '⋃<sub>n ≥ 0</sub> L<sup>n</sup> : concaténations d’un nombre quelconque (éventuellement nul) de mots de L']
+          ], 'cmp') +
+          `<p>Quelques calculs à connaître :</p>
+<ul>
+<li>{a, ab}·{b, ε} = {ab, a, abb, ab} = {a, ab, abb} ;</li>
+<li>{ab}* = {ε, ab, abab, ababab, …} ;</li>
+<li>{a, b}* = Σ* : on retrouve bien tous les mots ;</li>
+<li>L* contient toujours ε, même si ε ∉ L : en particulier ∅* = {ε} ;</li>
+<li>L·{ε} = L et L·∅ = ∅.</li>
+</ul>
+<p><strong>Lien avec les automates.</strong> Un automate A = (Q, Σ, δ, q0, F) définit le langage L(A) = {w ∈ Σ* | δ*(q0, w) ∈ F} (fiche « Automate fini déterministe »). Un automate est donc une manière finie de décrire un langage éventuellement infini. Les expressions régulières, vues dans la fiche suivante, en sont une autre, et le théorème de Kleene montre que ces deux descriptions sont équivalentes.</p>`
+      },
+      {
+        id: "expressions-regulieres",
+        title: "Expressions régulières",
+        meta: "Syntaxe, langage dénoté, langages rationnels, identités",
+        content: `<p>Une <strong>expression régulière</strong> (ER) sur l'alphabet Σ est définie par induction :</p>
+<ul>
+<li>∅ et ε sont des expressions régulières ;</li>
+<li>toute lettre a ∈ Σ est une expression régulière ;</li>
+<li>si e et f sont des expressions régulières, alors <strong>(e + f)</strong> (union), <strong>(e·f)</strong> ou <strong>(ef)</strong> (concaténation) et <strong>(e*)</strong> (étoile) sont des expressions régulières.</li>
+</ul>
+<p>Une expression est un objet <em>syntaxique</em> (un texte). Le langage qu'elle <strong>dénote</strong>, noté L(e), est défini par induction sur e :</p>
+<ul>
+<li>L(∅) = ∅, L(ε) = {ε}, L(a) = {a} ;</li>
+<li>L(e + f) = L(e) ∪ L(f) ;</li>
+<li>L(ef) = L(e)·L(f) ;</li>
+<li>L(e*) = L(e)*.</li>
+</ul>
+<p><strong>Conventions d'écriture.</strong> L'étoile est prioritaire sur la concaténation, elle-même prioritaire sur l'union : <code>a + bc*</code> se lit a + (b(c*)). On omet les parenthèses inutiles.</p>
+<p><strong>Exemples</strong> sur Σ = {a, b} :</p>` +
+          simpleTable(['Expression', 'Langage dénoté', 'Exemples de mots'], [
+            ['<code>a*b</code>', 'un nombre quelconque de a, puis un seul b', 'b, ab, aab'],
+            ['<code>(a+b)*</code>', 'tous les mots', 'ε, a, ba, abb'],
+            ['<code>a(a+b)*</code>', 'mots qui commencent par a', 'a, ab, aba'],
+            ['<code>(a+b)*ab</code>', 'mots qui se terminent par ab', 'ab, aab, bab'],
+            ['<code>(a+b)*aa(a+b)*</code>', 'mots qui contiennent le facteur aa', 'aa, baab, aaa'],
+            ['<code>b*ab*</code>', 'mots qui contiennent exactement un a', 'a, ba, bab'],
+            ['<code>(b + ab*a)*</code>', 'mots qui contiennent un nombre pair de a', 'ε, b, aa, abba']
+          ], 'cmp') +
+          `<p>Un langage L ⊆ Σ* est dit <strong>rationnel</strong> (ou <strong>régulier</strong>) s'il existe une expression régulière e telle que L = L(e). Tout langage fini est rationnel : le mot a<sub>1</sub>a<sub>2</sub>…a<sub>n</sub> est dénoté par l'expression a<sub>1</sub>a<sub>2</sub>…a<sub>n</sub> (et ε par ε), et un langage fini par la somme des expressions de ses mots.</p>
+<p><strong>Équivalence.</strong> Deux expressions e et f sont <strong>équivalentes</strong>, notée e ≡ f, si L(e) = L(f). Un même langage a de nombreuses expressions : par exemple (a+b)* ≡ (a*b*)*. Quelques identités utiles :</p>` +
+          simpleTable(['Identité', 'Commentaire'], [
+            ['e + f ≡ f + e ; e + e ≡ e', 'l’union est commutative et idempotente'],
+            ['e + ∅ ≡ e ; eε ≡ εe ≡ e', '∅ est neutre pour l’union, ε pour la concaténation'],
+            ['e∅ ≡ ∅e ≡ ∅', '∅ est absorbant pour la concaténation'],
+            ['e(f + g) ≡ ef + eg', 'distributivité'],
+            ['∅* ≡ ε ; ε* ≡ ε', 'étoile des langages triviaux'],
+            ['e* ≡ ε + ee* ≡ ε + e*e', 'on lit zéro fois e, ou une fois e puis e*'],
+            ['(e*)* ≡ e* ; e*e* ≡ e*', 'l’étoile est idempotente'],
+            ['(e + f)* ≡ (e*f*)*', 'une forme équivalente fréquemment utile']
+          ], 'cmp') +
+          `<p>Attention aux pièges : la concaténation n'est pas commutative (ab ≢ ba), et (e + f)* n'est pas équivalente à e* + f* (par exemple ab ∈ L((a+b)*) mais ab ∉ L(a* + b*)).</p>
+<p><strong>Expressions régulières en programmation.</strong> Les outils comme <code>grep</code> ou le module <code>re</code> de Python utilisent une syntaxe voisine : l'union s'écrit <code>|</code>, <code>e+</code> signifie « au moins une fois » (ee*), <code>e?</code> signifie e + ε et <code>[ab]</code> signifie a + b. Dans le cours, le symbole + désigne uniquement l'union.</p>`
+      },
+      {
+        id: "langages-reconnaissables",
+        title: "Langages reconnaissables",
+        meta: "Définition, complémentaire, produit d'automates, test du vide",
+        content: `<p>Un langage L ⊆ Σ* est <strong>reconnaissable</strong> s'il existe un automate fini qui le reconnaît, c'est-à-dire un AFD A tel que L = L(A). D'après le théorème d'équivalence AFD / AFND, on peut aussi bien demander un AFND. C'est la seconde manière de décrire un langage : à côté des expressions régulières (une description <em>écrite</em>), les automates donnent une description <em>par calcul</em>.</p>
+<p>Les langages reconnaissables sont stables par plusieurs opérations, et chacune se traduit par une construction sur les automates.</p>
+<p><strong>Complémentaire.</strong> Si L est reconnu par un AFD <strong>complet</strong> A = (Q, Σ, δ, q0, F), alors Σ* \\ L est reconnu par l'automate A′ = (Q, Σ, δ, q0, Q \\ F) : on échange états finaux et non finaux. En effet, A étant déterministe et complet, la lecture d'un mot w mène toujours dans un unique état δ*(q0, w), et w est accepté par A′ exactement quand il est rejeté par A.</p>
+<p>L'hypothèse « complet » est indispensable : dans un automate partiel, un mot bloqué est rejeté, et il le resterait après l'échange des états finaux. C'est pourquoi on commence par compléter l'automate avec la méthode du puits. Reprenons l'automate complet des mots qui commencent par a, et échangeons ses états finaux : q0 et P deviennent finaux, q1 ne l'est plus.</p>` +
+          automatonSvg(
+            { q0:[110,170], q1:[330,100], P:[330,260] },
+            [['q0','q1','a'], ['q0','P','b'], ['q1','q1','a, b'], ['P','P','a, b']],
+            'q0', ['q0','P'], 460, 320
+          ) +
+          `<p>Le nouvel automate reconnaît les mots qui ne commencent pas par a : le mot vide et les mots qui commencent par b.</p>
+<p><strong>Union et intersection : l'automate produit.</strong> Soient A<sub>1</sub> = (Q<sub>1</sub>, Σ, δ<sub>1</sub>, p<sub>0</sub>, F<sub>1</sub>) et A<sub>2</sub> = (Q<sub>2</sub>, Σ, δ<sub>2</sub>, r<sub>0</sub>, F<sub>2</sub>) deux AFD complets. L'<strong>automate produit</strong> a pour états les couples de Q<sub>1</sub> × Q<sub>2</sub>, pour état initial (p<sub>0</sub>, r<sub>0</sub>) et pour transitions δ((p, r), a) = (δ<sub>1</sub>(p, a), δ<sub>2</sub>(r, a)) : il fait avancer les deux automates en parallèle sur le même mot. Selon le choix des états finaux, il reconnaît :</p>
+<ul>
+<li>L(A<sub>1</sub>) ∩ L(A<sub>2</sub>) avec F = F<sub>1</sub> × F<sub>2</sub> (les deux automates acceptent) ;</li>
+<li>L(A<sub>1</sub>) ∪ L(A<sub>2</sub>) avec F = (F<sub>1</sub> × Q<sub>2</sub>) ∪ (Q<sub>1</sub> × F<sub>2</sub>) (l'un des deux accepte).</li>
+</ul>
+<p><strong>Exemple.</strong> A<sub>1</sub> reconnaît les mots qui ont un nombre pair de a (états q0 initial et final, q1 ; chaque a change d'état, chaque b le conserve) et A<sub>2</sub> les mots qui se terminent par b (états r0 initial, r1 final ; b mène en r1, a mène en r0). On pose A = (q0, r0), B = (q1, r0), C = (q0, r1) et D = (q1, r1). L'automate produit pour l'intersection est :</p>` +
+          simpleTable(['État', 'Couple', 'Sur a', 'Sur b', 'Final ?'], [
+            ['A (initial)', '(q0, r0)', 'B', 'C', 'non'],
+            ['B', '(q1, r0)', 'A', 'D', 'non'],
+            ['C', '(q0, r1)', 'B', 'C', 'oui (q0 ∈ F<sub>1</sub> et r1 ∈ F<sub>2</sub>)'],
+            ['D', '(q1, r1)', 'A', 'D', 'non (q1 ∉ F<sub>1</sub>)']
+          ]) +
+          automatonSvg(
+            { A:[90,150], B:[390,150], C:[240,70], D:[240,240] },
+            [['A','B','a'], ['B','A','a'], ['A','C','b'], ['C','B','a'], ['B','D','b'], ['D','A','a'], ['C','C','b'], ['D','D','b']],
+            'A', ['C'], 480, 300
+          ) +
+          `<p>Il reconnaît les mots qui ont un nombre pair de a <em>et</em> se terminent par b : par exemple b, aab et abab sont acceptés, aa et ab sont rejetés.</p>
+<p><strong>Conséquences.</strong> L'union et l'intersection s'expriment aussi à l'aide du complémentaire (L<sub>1</sub> ∩ L<sub>2</sub> = Σ* \\ ((Σ* \\ L<sub>1</sub>) ∪ (Σ* \\ L<sub>2</sub>))). La classe des langages reconnaissables est donc stable par complémentaire, union et intersection. La stabilité par concaténation et par étoile sera obtenue avec le théorème de Kleene.</p>
+<p><strong>Tester si un langage est vide.</strong> Le langage reconnu par un automate est non vide si et seulement s'il existe un état final accessible, c'est-à-dire un état utile. Cela se teste par un simple parcours du graphe de l'automate (fiche « Simplification des états inutiles »). En combinant avec les constructions précédentes, on décide si deux automates reconnaissent le même langage : L(A<sub>1</sub>) = L(A<sub>2</sub>) si et seulement si L(A<sub>1</sub>) \\ L(A<sub>2</sub>) et L(A<sub>2</sub>) \\ L(A<sub>1</sub>) sont vides, et ces deux langages sont reconnus par des automates produits.</p>`
+      },
+      {
+        id: "theoreme-kleene",
+        title: "Théorème de Kleene",
+        meta: "Langages rationnels = langages reconnaissables",
+        content: `<div class="callout"><strong>Théorème (Kleene).</strong> Un langage est rationnel (dénoté par une expression régulière) si et seulement s'il est reconnaissable (reconnu par un automate fini).</div>
+<p>Autrement dit, expressions régulières et automates finis décrivent exactement la même famille de langages. Le théorème se démontre en deux temps, qui font l'objet des deux fiches suivantes :</p>` +
+          kleeneSvg() +
+          simpleTable(['Flèche', 'Passage', 'Méthode'], [
+            ['1', 'expression régulière → AFND', 'construction par induction sur l’expression (fiche « Des expressions régulières aux automates »)'],
+            ['2', 'AFND → expression régulière', 'système d’équations sur les langages et lemme d’Arden (fiche « Des automates aux expressions régulières »)'],
+            ['3', 'AFND → AFD', 'déterminisation par la construction des parties'],
+            ['4', 'AFD → AFND', 'un AFD est un cas particulier d’AFND']
+          ], 'cmp') +
+          `<p>Les flèches 1 et 2 montrent l'équivalence entre langages rationnels et reconnaissables par un AFND, et les flèches 3 et 4 (fiche « Équivalence AFD / AFND ») permettent de passer à un AFD.</p>
+<p><strong>Ce que chaque point de vue apporte.</strong> Les deux représentations sont complémentaires : certaines opérations sont immédiates d'un côté et compliquées de l'autre.</p>` +
+          simpleTable(['Opération', 'Avec les expressions', 'Avec les automates'], [
+            ['union', 'e + f', 'union disjointe (AFND) ou produit (AFD complets)'],
+            ['concaténation', 'ef', 'automate de la concaténation'],
+            ['étoile', 'e*', 'automate de l’étoile'],
+            ['complémentaire', 'pas de formule directe', 'échange des états finaux d’un AFD complet'],
+            ['intersection', 'pas de formule directe', 'automate produit']
+          ], 'cmp') +
+          `<p>On en déduit que les langages rationnels sont stables par union, concaténation, étoile, complémentaire et intersection. Le complémentaire d'un langage rationnel est rationnel, même si l'on ne sait pas l'écrire directement avec une expression : on passe par l'automate, puis on revient à une expression.</p>
+<p><strong>Tous les langages ne sont pas rationnels.</strong> Par exemple {aⁿbⁿ | n ≥ 0} n'est pas rationnel : un automate n'a qu'un nombre fini d'états, donc une mémoire finie, et ne peut pas compter jusqu'à un n arbitraire. Pour le démontrer rigoureusement, on utilise le <strong>lemme de l'étoile</strong> (pas encore traité dans ce site).</p>`
+      },
+      {
+        id: "er-vers-automate",
+        title: "Des expressions régulières aux automates",
+        meta: "Construction d'un AFND par induction sur l'expression",
+        content: `<p>Montrons que tout langage rationnel est reconnaissable. Pour toute expression régulière e, on construit un AFND A<sub>e</sub> = (Q, Σ, δ, I, F) tel que L(A<sub>e</sub>) = L(e). On procède par induction sur e. C'est ici que le fait qu'un AFND puisse avoir <strong>plusieurs états initiaux</strong> est utile.</p>` +
+          simpleTable(['Expression', 'Automate'], [
+            ['∅', 'un état, initial et non final, sans transition'],
+            ['ε', 'un état, à la fois initial et final, sans transition'],
+            ['a (lettre)', 'deux états p et q, une transition p —a→ q ; I = {p}, F = {q}'],
+            ['e + f', 'union disjointe de A<sub>e</sub> et A<sub>f</sub> ; I = I<sub>e</sub> ∪ I<sub>f</sub> ; F = F<sub>e</sub> ∪ F<sub>f</sub>'],
+            ['ef', 'A<sub>e</sub> et A<sub>f</sub> recollés (détail ci-dessous)'],
+            ['e*', 'A<sub>e</sub> avec un nouvel état s (détail ci-dessous)']
+          ], 'cmp') +
+          `<p><strong>Concaténation.</strong> On prend A<sub>e</sub> et A<sub>f</sub> d'états deux à deux distincts (on renomme au besoin) et on définit A<sub>ef</sub> ainsi :</p>
+<ul>
+<li>états : Q<sub>e</sub> ∪ Q<sub>f</sub> ;</li>
+<li>transitions : celles de A<sub>e</sub> et de A<sub>f</sub>, plus une transition q —a→ r pour tout état q ∈ F<sub>e</sub> et toute transition i —a→ r de A<sub>f</sub> avec i ∈ I<sub>f</sub> (dès qu'on a fini de lire un mot de L(e), on peut commencer à lire un mot de L(f)) ;</li>
+<li>états initiaux : I<sub>e</sub>, auxquels on ajoute I<sub>f</sub> si ε ∈ L(e), c'est-à-dire si I<sub>e</sub> ∩ F<sub>e</sub> ≠ ∅ ;</li>
+<li>états finaux : F<sub>f</sub>, auxquels on ajoute F<sub>e</sub> si ε ∈ L(f), c'est-à-dire si I<sub>f</sub> ∩ F<sub>f</sub> ≠ ∅.</li>
+</ul>
+<p><strong>Étoile.</strong> On ajoute à A<sub>e</sub> un nouvel état s et on définit A<sub>e*</sub> ainsi :</p>
+<ul>
+<li>états : Q<sub>e</sub> ∪ {s} ;</li>
+<li>transitions : celles de A<sub>e</sub>, plus une transition q —a→ r pour tout état q ∈ F<sub>e</sub> ∪ {s} et toute transition i —a→ r avec i ∈ I<sub>e</sub> (à la fin d'un mot de L(e), on peut en recommencer un) ;</li>
+<li>état initial : I = {s} ; états finaux : F<sub>e</sub> ∪ {s}.</li>
+</ul>
+<p>Le nouvel état s, final, sert à reconnaître le mot vide, qui appartient toujours à L(e)*. Il ne suffit pas de rendre finaux les états initiaux de A<sub>e</sub> : un état initial peut avoir des transitions entrantes, et l'on reconnaîtrait alors des mots en trop. Or s n'a aucune transition entrante.</p>
+<p><strong>Justification.</strong> Pour l'union, un calcul réussi reste dans A<sub>e</sub> ou dans A<sub>f</sub> (aucune transition ne relie les deux) : on reconnaît L(e) ∪ L(f). Pour la concaténation et l'étoile, un calcul réussi se découpe en morceaux à chaque passage par une transition ajoutée, et chaque morceau est un calcul réussi de A<sub>e</sub> (ou de A<sub>f</sub>) : on obtient un mot de L(e)L(f), ou de L(e)*. Réciproquement, un mot de L(e)L(f) ou de L(e)* se décompose en mots de L(e) ou de L(f), que l'on lit successivement en passant par les transitions ajoutées. ∎</p>
+<p><strong>Exemple : a(a+b)*.</strong> On construit l'automate étape par étape.</p>
+<p>1. L'automate de a + b est l'union de p0 —a→ p1 et de r0 —b→ r1. Il possède deux états initiaux, p0 et r0, et deux états finaux, p1 et r1 :</p>` +
+          automatonSvg(
+            { p0:[110,60], p1:[300,60], r0:[110,150], r1:[300,150] },
+            [['p0','p1','a'], ['r0','r1','b']],
+            ['p0','r0'], ['p1','r1'], 460, 210
+          ) +
+          `<p>2. Pour l'étoile (a+b)*, on ajoute l'état s, initial et final. Depuis s, p1 et r1 (les états finaux), on ajoute une transition vers chaque successeur d'un état initial : p0 —a→ p1 et r0 —b→ r1 donnent s —a→ p1, s —b→ r1, p1 —a→ p1, p1 —b→ r1, r1 —a→ p1 et r1 —b→ r1. Plus aucune transition n'arrive en p0 ni en r0, qui ne sont plus accessibles : on les supprime (fiche « Simplification des états inutiles »).</p>` +
+          automatonSvg(
+            { s:[290,240], p1:[200,100], r1:[380,100] },
+            [['s','p1','a'], ['s','r1','b'], ['p1','p1','a'], ['p1','r1','b'], ['r1','p1','a'], ['r1','r1','b']],
+            's', ['s','p1','r1'], 460, 300
+          ) +
+          `<p>3. Pour la concaténation a·(a+b)*, on recolle l'automate x0 —a→ x1 de la lettre a avec le précédent. Comme ε ∈ L((a+b)*), les états finaux de x0 —a→ x1, c'est-à-dire x1, restent finaux. Depuis x1, on ajoute les transitions des successeurs de l'état initial s : x1 —a→ p1 et x1 —b→ r1. L'état s n'est plus accessible (il n'est plus initial et aucune transition n'y mène) : on le supprime.</p>` +
+          automatonSvg(
+            { x0:[70,220], x1:[190,220], p1:[320,90], r1:[450,90] },
+            [['x0','x1','a'], ['x1','p1','a'], ['x1','r1','b'], ['p1','p1','a'], ['p1','r1','b'], ['r1','p1','a'], ['r1','r1','b']],
+            'x0', ['x1','p1','r1'], 520, 290
+          ) +
+          `<p>L'AFND obtenu reconnaît bien les mots qui commencent par a. Il est plus gros que nécessaire (l'automate complet à trois états vu plus haut suffit), mais la construction est systématique et s'applique à n'importe quelle expression.</p>
+<p><strong>Taille.</strong> Chaque lettre ajoute deux états, chaque étoile un, et l'union et la concaténation n'en ajoutent aucun : le nombre d'états de A<sub>e</sub> est linéaire en la taille de e. Par exemple, pour (a+b)*ab, la construction donne un AFND à 9 états dont 6 sont utiles.</p>`
+      },
+      {
+        id: "automate-vers-er",
+        title: "Des automates aux expressions régulières",
+        meta: "Système d'équations sur les langages et lemme d'Arden",
+        content: `<p>Montrons réciproquement que tout langage reconnaissable est rationnel. On part d'un automate A = (Q, Σ, δ, I, F) (AFD ou AFND). Pour chaque état q, notons L<sub>q</sub> le langage reconnu <em>en partant de q</em> : L<sub>q</sub> = {w ∈ Σ* | un calcul de A sur w part de q et finit dans F}. Le langage de l'automate est la réunion des L<sub>i</sub> pour i ∈ I, et pour un AFD c'est simplement L<sub>q0</sub>.</p>
+<p><strong>Un système d'équations.</strong> Un mot de L<sub>q</sub> est soit le mot vide (possible seulement si q ∈ F), soit un mot non vide a·w′ où l'on suit une transition q —a→ r et où w′ ∈ L<sub>r</sub>. On obtient, pour tout état q :</p>
+<p style="text-align:center">L<sub>q</sub> = ⋃<sub>q —a→ r</sub> a·L<sub>r</sub>  ∪  ({ε} si q ∈ F)</p>
+<p>C'est un système d'équations linéaires dont les inconnues sont des langages. Pour le résoudre, on dispose du lemme suivant.</p>
+<div class="callout"><strong>Lemme d'Arden.</strong> Soient A et B deux langages. Le langage A*B est solution de l'équation X = AX ∪ B. Si de plus ε ∉ A, c'est la <strong>seule</strong> solution.</div>
+<p><strong>Preuve.</strong> Comme A* = {ε} ∪ AA*, on a A*B = B ∪ A(A*B) : A*B est solution.</p>
+<p>Supposons ε ∉ A et soit X une solution. Pour l'inclusion A*B ⊆ X, on montre par récurrence sur n que A<sup>n</sup>B ⊆ X : B ⊆ X car X = AX ∪ B, et si A<sup>n</sup>B ⊆ X alors A<sup>n+1</sup>B = A·A<sup>n</sup>B ⊆ AX ⊆ X. Pour l'inclusion X ⊆ A*B, raisonnons par l'absurde et prenons un mot w ∈ X \\ A*B de longueur minimale. Comme w ∈ AX ∪ B et w ∉ B, on a w = uw′ avec u ∈ A et w′ ∈ X. Puisque ε ∉ A, u est non vide, donc w′ est strictement plus court que w, et la minimalité de w donne w′ ∈ A*B. Alors w = uw′ ∈ A·A*B ⊆ A*B, contradiction. ∎</p>
+<p><strong>Méthode.</strong> On écrit le système, puis on élimine les inconnues une à une : on isole une inconnue X<sub>q</sub> avec le lemme d'Arden (X<sub>q</sub> = AX<sub>q</sub> ∪ B ⟹ X<sub>q</sub> = A*B), on la remplace dans les autres équations, et on recommence. À la fin, on exprime L<sub>i</sub> pour les états initiaux i. L'hypothèse ε ∉ A est toujours satisfaite : les coefficients des inconnues commencent toujours par une lettre, donc ne contiennent pas le mot vide.</p>
+<p><strong>Exemple 1 : nombre pair de a.</strong> Pour l'AFD à deux états q0 (initial et final) et q1, avec q0 —a→ q1, q0 —b→ q0, q1 —a→ q0 et q1 —b→ q1, le système est :</p>
+<p style="text-align:center">L<sub>0</sub> = b·L<sub>0</sub> ∪ a·L<sub>1</sub> ∪ {ε}<br>L<sub>1</sub> = a·L<sub>0</sub> ∪ b·L<sub>1</sub></p>
+<ol>
+<li>La seconde équation s'écrit L<sub>1</sub> = b·L<sub>1</sub> ∪ aL<sub>0</sub>. Le lemme d'Arden (A = b, B = aL<sub>0</sub>) donne L<sub>1</sub> = b*aL<sub>0</sub>.</li>
+<li>On remplace dans la première : L<sub>0</sub> = bL<sub>0</sub> ∪ a·b*a·L<sub>0</sub> ∪ {ε} = (b + ab*a)L<sub>0</sub> ∪ {ε}.</li>
+<li>Le lemme d'Arden (A = b + ab*a, B = ε) donne L<sub>0</sub> = (b + ab*a)*.</li>
+</ol>
+<p>Le langage de l'automate est donc dénoté par <code>(b + ab*a)*</code>, expression déjà rencontrée dans la fiche « Expressions régulières ».</p>
+<p><strong>Exemple 2 : l'automate émondé.</strong> Reprenons l'automate de la fiche « Automate émondé » (q0 —a→ q1, q1 —b→ q1, q1 —a→ q2, q2 —a,b→ q2, état final q2). Le système est :</p>
+<p style="text-align:center">L<sub>0</sub> = a·L<sub>1</sub><br>L<sub>1</sub> = b·L<sub>1</sub> ∪ a·L<sub>2</sub><br>L<sub>2</sub> = (a + b)·L<sub>2</sub> ∪ {ε}</p>
+<ol>
+<li>Arden sur L<sub>2</sub> (A = a + b, B = ε) : L<sub>2</sub> = (a+b)*.</li>
+<li>On remplace dans L<sub>1</sub> = bL<sub>1</sub> ∪ a(a+b)*, puis Arden (A = b, B = a(a+b)*) : L<sub>1</sub> = b*a(a+b)*.</li>
+<li>Enfin L<sub>0</sub> = a·L<sub>1</sub> = ab*a(a+b)*.</li>
+</ol>
+<p>On retrouve le langage a·b*·a·Σ* annoncé dans la fiche d'émondage.</p>
+<p><strong>Conclusion.</strong> Le système d'équations d'un automate admet une solution dont toutes les composantes sont des langages rationnels. Tout langage reconnaissable est donc rationnel, ce qui, avec la fiche précédente, démontre le théorème de Kleene. ∎</p>
+<p><strong>Remarques.</strong> Il existe une autre méthode, l'élimination des états, qui supprime les états un par un en étiquetant les transitions par des expressions régulières. Dans tous les cas, l'expression obtenue peut être très grande par rapport à l'automate : le passage automate → expression est bien plus coûteux que le passage inverse.</p>`
+      }
+    ]
   }
 ];
 
@@ -2144,3 +2409,4 @@ document.addEventListener('keydown', function(e) {
 </script>
 </body>
 </html>
+</body></html>
