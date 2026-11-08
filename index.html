@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1225,6 +1224,79 @@ const ALGO_SECTIONS = [
 <p><strong>Complexité.</strong> Le tri des arêtes coûte O(E log E), c'est-à-dire O(E log V) puisque E ≤ V². Avec union-find (compression de chemin et union par rang), les opérations <code>trouver</code> et <code>union</code> coûtent un temps quasi constant : le tri domine, d'où O(E log E) au total.</p>`
       }
     ]
+  },
+  {
+    id: "er-automates",
+    title: "Expressions régulières et automates",
+    description: "Berry-Sethi : construire directement un automate à n + 1 états, sans ε-transition, à partir d'une expression régulière.",
+    intro: `<p>Cette section regroupe les algorithmes qui passent d'une expression régulière à un automate. Ils illustrent le théorème de Kleene (voir la fiche « Théorème de Kleene » dans l'onglet Notions). On prend pour exemple l'expression <code>(a + b)*ab</code>, qui dénote les mots sur {a, b} se terminant par ab.</p>`,
+    algos: [
+      {
+        id: "berry-sethi",
+        title: "Berry-Sethi (automate de Glushkov)",
+        meta: "Expression régulière → AFND à n + 1 états · sans ε-transition",
+        description: `<p>L'algorithme de Berry-Sethi construit, à partir d'une expression régulière e contenant <strong>n lettres</strong> (comptées avec leurs répétitions), un AFND qui reconnaît L(e), avec <strong>n + 1 états</strong> et sans ε-transition. On l'appelle aussi automate de Glushkov. L'idée est la suivante :</p>
+<ol>
+<li><strong>Linéariser</strong> l'expression : on numérote chaque occurrence de lettre pour que toutes les lettres soient distinctes. Par exemple (a + b)*ab devient (a<sub>1</sub> + b<sub>2</sub>)*a<sub>3</sub>b<sub>4</sub>. On note e' l'expression linéarisée.</li>
+<li>Le langage d'une expression linéaire est un <strong>langage local</strong> (voir la fiche « Langages locaux » dans l'onglet Notions) : il est entièrement décrit par ses positions de début P(e'), de fin D(e') et ses facteurs de longueur 2 autorisés F(e'), calculés par induction.</li>
+<li>L'automate local de e' est l'automate de Berry-Sethi, une fois que l'on a effacé les numéros dans les étiquettes des transitions.</li>
+</ol>
+<p><strong>Calcul de Λ, P, D, F.</strong> Pour une expression linéaire e', Λ(e') est vrai si ε ∈ L(e') ; P(e') est l'ensemble des positions (numéros) par lesquelles un mot peut commencer ; D(e') l'ensemble de celles par lesquelles il peut finir ; F(e') l'ensemble des couples (i, j) de positions qui peuvent se suivre dans un mot de L(e'). Les règles sont :</p>` +
+          simpleTable(['e\'', 'Λ', 'P', 'D', 'F'], [
+            ['∅', 'faux', '∅', '∅', '∅'],
+            ['ε', 'vrai', '∅', '∅', '∅'],
+            ['a<sub>i</sub>', 'faux', '{i}', '{i}', '∅'],
+            ['e + f', 'Λ(e) ou Λ(f)', 'P(e) ∪ P(f)', 'D(e) ∪ D(f)', 'F(e) ∪ F(f)'],
+            ['ef', 'Λ(e) et Λ(f)', 'P(e) ∪ P(f) si Λ(e), sinon P(e)', 'D(f) ∪ D(e) si Λ(f), sinon D(f)', 'F(e) ∪ F(f) ∪ D(e)·P(f)'],
+            ['e*', 'vrai', 'P(e)', 'D(e)', 'F(e) ∪ D(e)·P(e)']
+          ], 'cmp') +
+          `<p>Ici D(e)·P(f) désigne l'ensemble des couples (i, j) avec i ∈ D(e) et j ∈ P(f).</p>
+<p><strong>Correction.</strong> Notons π l'opération qui efface les numéros. On a L(e) = π(L(e')) (par induction immédiate sur e). La fiche « Langages locaux » montre que L(e') \\ {ε} est l'ensemble des mots i<sub>1</sub>…i<sub>m</sub> de positions tels que i<sub>1</sub> ∈ P, i<sub>m</sub> ∈ D et (i<sub>k</sub>, i<sub>k+1</sub>) ∈ F pour tout k. Or un calcul de l'automate construit ci-dessous, 0 → i<sub>1</sub> → … → i<sub>m</sub>, existe exactement dans ces conditions, et il lit le mot π(i<sub>1</sub>…i<sub>m</sub>) car chaque transition vers j est étiquetée par la lettre de la position j. L'automate reconnaît donc π(L(e') \\ {ε}), et accepte ε si et seulement si 0 est final, c'est-à-dire si Λ(e') est vrai : c'est bien L(e).</p>`,
+        pseudocode: `fonction berry_sethi(e):
+    e' ← linéariser(e)             (a1, b2, a3, ...)
+    n ← nombre de lettres de e'
+    calculer Λ, P, D, F de e'      (par induction)
+
+    états ← {0, 1, ..., n}
+    initial ← 0
+
+    pour chaque i dans P:
+        ajouter la transition 0 --lettre(i)--> i
+
+    pour chaque couple (i, j) dans F:
+        ajouter la transition i --lettre(j)--> j
+
+    finaux ← D
+    si Λ est vrai:
+        ajouter 0 aux finaux
+
+    retourner (états, transitions, initial, finaux)`,
+        exampleHtml: `<p>On applique l'algorithme à e = (a + b)*ab.</p>
+<p><strong>1. Linéarisation.</strong> e' = (a<sub>1</sub> + b<sub>2</sub>)*a<sub>3</sub>b<sub>4</sub>. Il y a n = 4 positions, de lettres : lettre(1) = a, lettre(2) = b, lettre(3) = a, lettre(4) = b.</p>
+<p><strong>2. Calcul de Λ, P, D, F</strong>, des sous-expressions vers l'expression entière :</p>` +
+          simpleTable(['Sous-expression', 'Λ', 'P', 'D', 'F'], [
+            ['a<sub>1</sub> + b<sub>2</sub>', 'faux', '{1, 2}', '{1, 2}', '∅'],
+            ['(a<sub>1</sub> + b<sub>2</sub>)*', 'vrai', '{1, 2}', '{1, 2}', '{11, 12, 21, 22}'],
+            ['a<sub>3</sub>b<sub>4</sub>', 'faux', '{3}', '{4}', '{34}'],
+            ['(a<sub>1</sub> + b<sub>2</sub>)*a<sub>3</sub>b<sub>4</sub>', 'faux', '{1, 2, 3}', '{4}', '{11, 12, 21, 22, 34, 13, 23}']
+          ], 'cmp') +
+          `<p>Détail pour la dernière ligne (concaténation de e = (a<sub>1</sub> + b<sub>2</sub>)* et f = a<sub>3</sub>b<sub>4</sub>) : Λ(e) est vrai, donc P = P(e) ∪ P(f) = {1, 2, 3} ; Λ(f) est faux, donc D = D(f) = {4} ; et F = F(e) ∪ F(f) ∪ D(e)·P(f) = F(e) ∪ {34} ∪ {13, 23}. Ici 11 désigne le couple (1, 1), 12 le couple (1, 2), etc.</p>
+<p><strong>3. Transitions.</strong></p>
+<ul>
+<li>Depuis l'état initial 0, une transition vers chaque position de P = {1, 2, 3} : 0 —a→ 1, 0 —b→ 2, 0 —a→ 3.</li>
+<li>Pour chaque couple (i, j) de F, une transition i —lettre(j)→ j : 1 —a→ 1, 1 —b→ 2, 2 —a→ 1, 2 —b→ 2, 3 —b→ 4, 1 —a→ 3, 2 —a→ 3.</li>
+<li>États finaux : D = {4} ; l'état 0 n'est pas final car Λ est faux (ε ∉ L(e)).</li>
+</ul>` +
+          automatonSvg(
+            { '0':[60,150], '1':[230,60], '2':[230,240], '3':[400,150], '4':[550,150] },
+            [['0','1','a'], ['0','2','b'], ['0','3','a'], ['1','1','a'], ['2','2','b'], ['1','2','b'], ['2','1','a'], ['1','3','a'], ['2','3','a'], ['3','4','b']],
+            '0', ['4'], 620, 300
+          ) +
+          `<p>Cet automate a n + 1 = 5 états. Il est non déterministe (par exemple, depuis 0 la lettre a mène à 1 et à 3), mais il reconnaît exactement les mots de {a, b}* qui se terminent par ab : pour atteindre l'état final 4, il faut lire un a vers l'état 3, puis un b.</p>
+<p><strong>Comparaison.</strong> La construction par induction de la fiche « Des expressions régulières aux automates » donne pour la même expression un automate de 9 états, dont 6 seulement sont utiles. Berry-Sethi fournit directement un automate dont chaque état correspond à une lettre de l'expression (plus l'état initial).</p>
+<p><strong>Complexité.</strong> L'automate a n + 1 états. Le nombre de transitions est celui de |P| + |F|, qui est en O(n²) dans le pire cas (par exemple pour (a + b + c + …)*). Le calcul de P et D est linéaire, celui de F coûte au plus O(n²).</p>`
+      }
+    ]
   }
 ];
 
@@ -1649,7 +1721,7 @@ fonction emonder(A):
   {
     id: "langages-notions",
     title: "Langages et expressions régulières",
-    description: "Mots, langages, expressions régulières, langages reconnaissables et théorème de Kleene : le lien entre langages, automates et expressions.",
+    description: "Mots, langages, expressions régulières, théorème de Kleene, stabilité, langages locaux, lemme de l'étoile et comparaison avec les langages algébriques.",
     intro: "",
     notions: [
       {
@@ -1767,7 +1839,7 @@ fonction emonder(A):
             'A', ['C'], 480, 300
           ) +
           `<p>Il reconnaît les mots qui ont un nombre pair de a <em>et</em> se terminent par b : par exemple b, aab et abab sont acceptés, aa et ab sont rejetés.</p>
-<p><strong>Conséquences.</strong> L'union et l'intersection s'expriment aussi à l'aide du complémentaire (L<sub>1</sub> ∩ L<sub>2</sub> = Σ* \\ ((Σ* \\ L<sub>1</sub>) ∪ (Σ* \\ L<sub>2</sub>))). La classe des langages reconnaissables est donc stable par complémentaire, union et intersection. La stabilité par concaténation et par étoile sera obtenue avec le théorème de Kleene.</p>
+<p><strong>Conséquences.</strong> L'union et l'intersection s'expriment aussi à l'aide du complémentaire (L<sub>1</sub> ∩ L<sub>2</sub> = Σ* \\ ((Σ* \\ L<sub>1</sub>) ∪ (Σ* \\ L<sub>2</sub>))). La classe des langages reconnaissables est donc stable par complémentaire, union et intersection. La stabilité par concaténation et par étoile est démontrée dans la fiche « Stabilité par union, concaténation et étoile ».</p>
 <p><strong>Tester si un langage est vide.</strong> Le langage reconnu par un automate est non vide si et seulement s'il existe un état final accessible, c'est-à-dire un état utile. Cela se teste par un simple parcours du graphe de l'automate (fiche « Simplification des états inutiles »). En combinant avec les constructions précédentes, on décide si deux automates reconnaissent le même langage : L(A<sub>1</sub>) = L(A<sub>2</sub>) si et seulement si L(A<sub>1</sub>) \\ L(A<sub>2</sub>) et L(A<sub>2</sub>) \\ L(A<sub>1</sub>) sont vides, et ces deux langages sont reconnus par des automates produits.</p>`
       },
       {
@@ -1793,7 +1865,7 @@ fonction emonder(A):
             ['intersection', 'pas de formule directe', 'automate produit']
           ], 'cmp') +
           `<p>On en déduit que les langages rationnels sont stables par union, concaténation, étoile, complémentaire et intersection. Le complémentaire d'un langage rationnel est rationnel, même si l'on ne sait pas l'écrire directement avec une expression : on passe par l'automate, puis on revient à une expression.</p>
-<p><strong>Tous les langages ne sont pas rationnels.</strong> Par exemple {aⁿbⁿ | n ≥ 0} n'est pas rationnel : un automate n'a qu'un nombre fini d'états, donc une mémoire finie, et ne peut pas compter jusqu'à un n arbitraire. Pour le démontrer rigoureusement, on utilise le <strong>lemme de l'étoile</strong> (pas encore traité dans ce site).</p>`
+<p><strong>Tous les langages ne sont pas rationnels.</strong> Par exemple {aⁿbⁿ | n ≥ 0} n'est pas rationnel : un automate n'a qu'un nombre fini d'états, donc une mémoire finie, et ne peut pas compter jusqu'à un n arbitraire. Pour le démontrer rigoureusement, on utilise le <strong>lemme de l'étoile</strong> (voir la fiche « Lemme de l'étoile »).</p>`
       },
       {
         id: "er-vers-automate",
@@ -1823,6 +1895,7 @@ fonction emonder(A):
 </ul>
 <p>Le nouvel état s, final, sert à reconnaître le mot vide, qui appartient toujours à L(e)*. Il ne suffit pas de rendre finaux les états initiaux de A<sub>e</sub> : un état initial peut avoir des transitions entrantes, et l'on reconnaîtrait alors des mots en trop. Or s n'a aucune transition entrante.</p>
 <p><strong>Justification.</strong> Pour l'union, un calcul réussi reste dans A<sub>e</sub> ou dans A<sub>f</sub> (aucune transition ne relie les deux) : on reconnaît L(e) ∪ L(f). Pour la concaténation et l'étoile, un calcul réussi se découpe en morceaux à chaque passage par une transition ajoutée, et chaque morceau est un calcul réussi de A<sub>e</sub> (ou de A<sub>f</sub>) : on obtient un mot de L(e)L(f), ou de L(e)*. Réciproquement, un mot de L(e)L(f) ou de L(e)* se décompose en mots de L(e) ou de L(f), que l'on lit successivement en passant par les transitions ajoutées. ∎</p>
+<p>Une preuve détaillée de ces trois constructions est donnée dans la fiche « Stabilité par union, concaténation et étoile ». Une autre construction, qui évite de multiplier les états, est l'algorithme de Berry-Sethi (onglet Algos, section « Expressions régulières et automates »).</p>
 <p><strong>Exemple : a(a+b)*.</strong> On construit l'automate étape par étape.</p>
 <p>1. L'automate de a + b est l'union de p0 —a→ p1 et de r0 —b→ r1. Il possède deux états initiaux, p0 et r0, et deux états finaux, p1 et r1 :</p>` +
           automatonSvg(
@@ -1875,6 +1948,165 @@ fonction emonder(A):
 <p>On retrouve le langage a·b*·a·Σ* annoncé dans la fiche d'émondage.</p>
 <p><strong>Conclusion.</strong> Le système d'équations d'un automate admet une solution dont toutes les composantes sont des langages rationnels. Tout langage reconnaissable est donc rationnel, ce qui, avec la fiche précédente, démontre le théorème de Kleene. ∎</p>
 <p><strong>Remarques.</strong> Il existe une autre méthode, l'élimination des états, qui supprime les états un par un en étiquetant les transitions par des expressions régulières. Dans tous les cas, l'expression obtenue peut être très grande par rapport à l'automate : le passage automate → expression est bien plus coûteux que le passage inverse.</p>`
+      },
+      {
+        id: "stabilite-rationnels",
+        title: "Stabilité par union, concaténation et étoile",
+        meta: "Preuves avec les expressions régulières et avec les automates",
+        content: `<div class="callout"><strong>Proposition.</strong> Si L<sub>1</sub> et L<sub>2</sub> sont des langages rationnels, alors L<sub>1</sub> ∪ L<sub>2</sub>, L<sub>1</sub>L<sub>2</sub> et L<sub>1</sub>* sont rationnels.</div>
+<p>Selon la définition que l'on prend du mot « rationnel », la preuve est immédiate ou demande une construction. On donne les deux.</p>
+<p><strong>Preuve 1 : avec les expressions régulières.</strong> Un langage est rationnel s'il est dénoté par une expression régulière. Si L<sub>1</sub> = L(e<sub>1</sub>) et L<sub>2</sub> = L(e<sub>2</sub>), alors par définition de la sémantique des expressions :</p>
+<ul>
+<li>L(e<sub>1</sub> + e<sub>2</sub>) = L<sub>1</sub> ∪ L<sub>2</sub> ;</li>
+<li>L(e<sub>1</sub>e<sub>2</sub>) = L<sub>1</sub>L<sub>2</sub> ;</li>
+<li>L(e<sub>1</sub>*) = L<sub>1</sub>*.</li>
+</ul>
+<p>Ces trois langages sont dénotés par des expressions régulières, donc rationnels. ∎</p>
+<p><strong>Preuve 2 : avec les automates.</strong> Un langage est reconnaissable s'il est reconnu par un AFND. On utilise des AFND A = (Q, Σ, Δ, I, F) avec un <em>ensemble</em> I d'états initiaux et un ensemble Δ ⊆ Q × Σ × Q de transitions, sans ε-transition. On dit que ε ∈ L(A) si et seulement si I ∩ F ≠ ∅. Soient A<sub>1</sub> et A<sub>2</sub> deux tels automates reconnaissant L<sub>1</sub> et L<sub>2</sub>, dont on suppose les ensembles d'états <strong>disjoints</strong> (quitte à renommer).</p>
+<p><strong>Union.</strong> On pose A = (Q<sub>1</sub> ∪ Q<sub>2</sub>, Σ, Δ<sub>1</sub> ∪ Δ<sub>2</sub>, I<sub>1</sub> ∪ I<sub>2</sub>, F<sub>1</sub> ∪ F<sub>2</sub>). Aucune transition ne relie Q<sub>1</sub> à Q<sub>2</sub>, donc un calcul de A reste entièrement dans Q<sub>1</sub> ou entièrement dans Q<sub>2</sub>. Un calcul réussi commence dans I<sub>1</sub> ∪ I<sub>2</sub> et finit dans F<sub>1</sub> ∪ F<sub>2</sub> : c'est donc un calcul réussi de A<sub>1</sub> ou un calcul réussi de A<sub>2</sub>. Ainsi L(A) = L<sub>1</sub> ∪ L<sub>2</sub>. ∎</p>
+<p><strong>Concaténation.</strong> On pose A = (Q<sub>1</sub> ∪ Q<sub>2</sub>, Σ, Δ, I, F) avec :</p>
+<ul>
+<li>Δ = Δ<sub>1</sub> ∪ Δ<sub>2</sub> ∪ { (q, a, r) | q ∈ F<sub>1</sub> et il existe i ∈ I<sub>2</sub> tel que (i, a, r) ∈ Δ<sub>2</sub> } ;</li>
+<li>I = I<sub>1</sub>, auquel on ajoute I<sub>2</sub> si ε ∈ L<sub>1</sub> ;</li>
+<li>F = F<sub>2</sub>, auquel on ajoute F<sub>1</sub> si ε ∈ L<sub>2</sub>.</li>
+</ul>
+<p>L'idée : quand on arrive dans un état final de A<sub>1</sub>, on a lu un mot de L<sub>1</sub> et on peut commencer à lire un mot de L<sub>2</sub> en « copiant » les premières transitions de A<sub>2</sub>.</p>
+<p><em>Inclusion L<sub>1</sub>L<sub>2</sub> ⊆ L(A).</em> Soit w = uv avec u ∈ L<sub>1</sub> et v ∈ L<sub>2</sub>.</p>
+<ul>
+<li>Si v = ε, alors ε ∈ L<sub>2</sub>, donc F<sub>1</sub> ⊆ F ; un calcul réussi de A<sub>1</sub> sur u est un calcul de A de I<sub>1</sub> vers F<sub>1</sub> ⊆ F.</li>
+<li>Si u = ε, alors ε ∈ L<sub>1</sub>, donc I<sub>2</sub> ⊆ I ; un calcul réussi de A<sub>2</sub> sur v est un calcul réussi de A.</li>
+<li>Si u = u'a et v = bv' sont non vides, il y a un calcul i<sub>1</sub> —u'→ q —a→ q' de A<sub>1</sub> avec i<sub>1</sub> ∈ I<sub>1</sub> et q' ∈ F<sub>1</sub>, et un calcul j —b→ r —v'→ f de A<sub>2</sub> avec j ∈ I<sub>2</sub> et f ∈ F<sub>2</sub>. Comme q' ∈ F<sub>1</sub> et (j, b, r) ∈ Δ<sub>2</sub>, la transition (q', b, r) est dans Δ. On obtient le calcul i<sub>1</sub> —u→ q' —b→ r —v'→ f de A, qui est réussi car f ∈ F<sub>2</sub> ⊆ F.</li>
+</ul>
+<p><em>Inclusion L(A) ⊆ L<sub>1</sub>L<sub>2</sub>.</em> Soit w reconnu par A, par un calcul de i ∈ I à f ∈ F. Aucune transition ne revient de Q<sub>2</sub> vers Q<sub>1</sub> : le calcul reste dans Q<sub>1</sub>, ou reste dans Q<sub>2</sub>, ou passe une seule fois de Q<sub>1</sub> à Q<sub>2</sub> par une transition ajoutée.</p>
+<ul>
+<li><em>Il reste dans Q<sub>1</sub>.</em> Il n'utilise que des transitions de Δ<sub>1</sub>, part de I<sub>1</sub> et finit dans F ∩ Q<sub>1</sub>, qui est non vide : cela impose F<sub>1</sub> ⊆ F, donc ε ∈ L<sub>2</sub>. Alors w ∈ L<sub>1</sub> et w = w·ε ∈ L<sub>1</sub>L<sub>2</sub>.</li>
+<li><em>Il reste dans Q<sub>2</sub>.</em> Il part d'un état de I ∩ Q<sub>2</sub>, qui est non vide : cela impose I<sub>2</sub> ⊆ I, donc ε ∈ L<sub>1</sub>. Le calcul n'utilise que des transitions de Δ<sub>2</sub> et finit dans F<sub>2</sub> : w ∈ L<sub>2</sub>, et w = ε·w ∈ L<sub>1</sub>L<sub>2</sub>.</li>
+<li><em>Il passe de Q<sub>1</sub> à Q<sub>2</sub>.</em> On écrit w = u·a·v' où a est la lettre de la transition ajoutée (q, a, r) avec q ∈ F<sub>1</sub>. La partie avant donne un calcul de A<sub>1</sub> de i ∈ I<sub>1</sub> à q ∈ F<sub>1</sub> : u ∈ L<sub>1</sub>. Par définition de la transition ajoutée, il existe j ∈ I<sub>2</sub> avec (j, a, r) ∈ Δ<sub>2</sub> ; la suite du calcul r —v'→ f reste dans Q<sub>2</sub> et finit dans F<sub>2</sub>. Donc j —a→ r —v'→ f est un calcul réussi de A<sub>2</sub> : av' ∈ L<sub>2</sub>. Ainsi w = u·(av') ∈ L<sub>1</sub>L<sub>2</sub>. ∎</li>
+</ul>
+<p><strong>Étoile.</strong> Soit A = (Q, Σ, Δ, I, F) un AFND reconnaissant L. On ajoute un nouvel état s ∉ Q et on pose A* = (Q ∪ {s}, Σ, Δ*, {s}, F ∪ {s}) avec</p>
+<p style="text-align:center">Δ* = Δ ∪ { (q, a, r) | q ∈ F ∪ {s} et il existe i ∈ I tel que (i, a, r) ∈ Δ }.</p>
+<p><em>Inclusion L* ⊆ L(A*).</em> Le mot vide est accepté car s est à la fois initial et final. Soit w = u<sub>1</sub>…u<sub>k</sub> avec k ≥ 1 et u<sub>i</sub> ∈ L ; on peut supposer les u<sub>i</sub> non vides (supprimer les facteurs vides ne change pas w). Écrivons u<sub>i</sub> = a<sub>i</sub>v<sub>i</sub>. Comme u<sub>i</sub> ∈ L, il existe un calcul réussi i<sub>i</sub> —a<sub>i</sub>→ r<sub>i</sub> —v<sub>i</sub>→ f<sub>i</sub> avec i<sub>i</sub> ∈ I et f<sub>i</sub> ∈ F. Dans A*, on lit
+s —a<sub>1</sub>→ r<sub>1</sub> —v<sub>1</sub>→ f<sub>1</sub> —a<sub>2</sub>→ r<sub>2</sub> —v<sub>2</sub>→ f<sub>2</sub> … —a<sub>k</sub>→ r<sub>k</sub> —v<sub>k</sub>→ f<sub>k</sub>.
+Les transitions (s, a<sub>1</sub>, r<sub>1</sub>) et (f<sub>i−1</sub>, a<sub>i</sub>, r<sub>i</sub>) sont dans Δ* par construction, et f<sub>k</sub> ∈ F : le calcul est réussi.</p>
+<p><em>Inclusion L(A*) ⊆ L*.</em> Soit w non vide reconnu par A*, par un calcul partant de s. Aucune transition de Δ* n'arrive dans s (les transitions de Δ arrivent dans Q, et les transitions ajoutées arrivent dans des états r ∈ Q) : le calcul ne repasse jamais par s, donc il finit dans F. Découpons-le juste avant chaque transition ajoutée qu'il emprunte ; la première transition en est une, car s n'a pas d'autre transition sortante. On obtient des morceaux consécutifs, chacun commençant par une transition ajoutée (q, a, r) puis ne suivant que des transitions de Δ. Remplaçons cette transition ajoutée par (i, a, r) ∈ Δ, avec i ∈ I : chaque morceau devient un calcul de A qui part de I. Il finit dans F : soit c'est le dernier morceau, qui finit dans F, soit le morceau suivant commence par une transition ajoutée partant de q ∈ F ∪ {s}, et q ≠ s puisqu'on ne repasse pas par s. Chaque morceau lit donc un mot de L, et w est une concaténation de mots de L : w ∈ L*. ∎</p>
+<p><strong>Conclusion.</strong> Les langages reconnaissables sont stables par union, concaténation et étoile. Avec le théorème de Kleene (fiche « Théorème de Kleene »), les langages rationnels le sont aussi. On sait déjà par la fiche « Langages reconnaissables » que la classe est stable par complémentaire et par intersection ; elle est donc stable par toutes les opérations booléennes et par les opérations rationnelles.</p>
+<p><strong>Remarque.</strong> La construction de l'étoile utilise un nouvel état s : rendre simplement finaux les états initiaux de A et ajouter les transitions de retour ne suffirait pas, car un état initial peut avoir des transitions entrantes, et on reconnaîtrait alors des mots en trop. Par exemple, soit A l'automate 1 —a→ 2, 2 —b→ 1 (initial 1, final 2, langage a(ba)*). Si l'on rendait 1 final, on accepterait « ab », alors que tous les mots de L* se terminent par a.</p>`
+      },
+      {
+        id: "langages-locaux",
+        title: "Langages locaux",
+        meta: "Premières lettres, dernières lettres, facteurs de longueur 2",
+        content: `<p>Un langage local est un langage dont l'appartenance d'un mot se lit uniquement sur <strong>sa première lettre, sa dernière lettre et ses facteurs de longueur 2</strong>. Cette notion est le point de départ de l'algorithme de Berry-Sethi (onglet Algos).</p>
+<div class="callout"><strong>Définition.</strong> Soient P ⊆ Σ (lettres de début), D ⊆ Σ (lettres de fin) et F ⊆ Σ<sup>2</sup> (facteurs de longueur 2 autorisés). Le langage local défini par (P, D, F) est
+<p style="text-align:center">L(P, D, F) = { w ∈ Σ<sup>+</sup> | la première lettre de w est dans P, la dernière est dans D, et tout facteur de longueur 2 de w est dans F }.</p>
+Un langage L ⊆ Σ* est <strong>local</strong> si L \\ {ε} = L(P, D, F) pour certains P, D, F. Le mot vide peut appartenir ou non à L : il n'est pas concerné par ces conditions.</div>
+<p>De façon équivalente, avec N = Σ<sup>2</sup> \\ F l'ensemble des facteurs interdits : L \\ {ε} = (PΣ* ∩ Σ*D) \\ Σ*NΣ*. Un mot de longueur 1 est accepté s'il est dans P ∩ D, puisqu'il n'a aucun facteur de longueur 2.</p>
+<p><strong>Pour un langage L quelconque</strong>, on note P(L), D(L) et F(L) l'ensemble des premières lettres, des dernières lettres et des facteurs de longueur 2 des mots non vides de L. On a toujours L \\ {ε} ⊆ L(P(L), D(L), F(L)) ; L est local si et seulement si cette inclusion est une égalité.</p>
+<p><strong>Exemple 1.</strong> Avec Σ = {a, b}, P = {a}, D = {b} et F = {aa, ab, ba} (donc bb est interdit), on obtient les mots qui commencent par a, finissent par b et ne contiennent pas bb : par exemple b n'est pas dans le langage, ab et aab et abab y sont, abb n'y est pas.</p>
+<p><strong>Automate local.</strong> Un langage local est reconnu par un automate très simple : on prend un état initial 0 et un état par lettre, l'état a signifiant « la dernière lettre lue est a ». Les transitions sont :</p>
+<ul>
+<li>0 —a→ a pour toute lettre a ∈ P ;</li>
+<li>a —b→ b pour tout facteur ab ∈ F ;</li>
+<li>états finaux : D, auxquels on ajoute 0 si ε appartient au langage.</li>
+</ul>` +
+          automatonSvg(
+            { '0':[70,100], 'a':[240,100], 'b':[410,100] },
+            [['0','a','a'], ['a','a','a'], ['a','b','b'], ['b','a','a']],
+            '0', ['b'], 480, 190
+          ) +
+          `<p>C'est l'automate de l'exemple 1. Il est déterministe, et toute transition étiquetée par une lettre arrive dans l'état portant cette lettre. Justification : après avoir lu w = w<sub>1</sub>…w<sub>n</sub> (n ≥ 1), le seul calcul possible est 0 → w<sub>1</sub> → … → w<sub>n</sub>, qui existe si et seulement si w<sub>1</sub> ∈ P et w<sub>i</sub>w<sub>i+1</sub> ∈ F pour tout i, et qui est réussi si et seulement si w<sub>n</sub> ∈ D. C'est exactement la définition de L(P, D, F). Réciproquement, dans un tel automate, l'existence d'un calcul ne dépend que de la première lettre et des couples de lettres consécutives, donc le langage reconnu est local. En particulier, <strong>un langage local est rationnel</strong>.</p>
+<p><strong>Exemples de langages non locaux.</strong></p>
+<ul>
+<li>L = {ab, ba} : toute définition (P, D, F) qui engendre ab et ba contient a et b dans P et dans D, et ab, ba dans F. Elle engendre alors aussi <strong>aba</strong>, qui n'est pas dans L.</li>
+<li>L = (aa)* : si (P, D, F) engendre les mots non vides a<sup>2k</sup>, alors P = D = {a} et aa ∈ F, donc le mot <strong>a</strong> est lui aussi engendré, alors qu'il n'est pas dans L. Un langage local ne « compte » pas de parité.</li>
+</ul>
+<p>Les langages locaux sont donc particuliers : ils ne contiennent que des contraintes « de proximité ». Mais ils servent de brique de base, grâce à la propriété suivante.</p>
+<div class="callout"><strong>Expressions linéaires.</strong> Une expression régulière est <strong>linéaire</strong> si chaque lettre y apparaît au plus une fois. Le langage dénoté par une expression linéaire est local.</div>
+<p>Par exemple a·b* + c est linéaire ; (a + b)*ab ne l'est pas (a apparaît deux fois). On calcule pour une expression e les données suivantes, par induction sur e (Σ<sub>e</sub> désigne l'ensemble des lettres qui apparaissent dans e) :</p>` +
+          simpleTable(['e', 'Λ(e) (ε ∈ L(e) ?)', 'P(e)', 'D(e)', 'F(e)'], [
+            ['∅', 'faux', '∅', '∅', '∅'],
+            ['ε', 'vrai', '∅', '∅', '∅'],
+            ['a (lettre)', 'faux', '{a}', '{a}', '∅'],
+            ['e + f', 'Λ(e) ou Λ(f)', 'P(e) ∪ P(f)', 'D(e) ∪ D(f)', 'F(e) ∪ F(f)'],
+            ['ef', 'Λ(e) et Λ(f)', 'P(e) ∪ P(f) si Λ(e), sinon P(e)', 'D(f) ∪ D(e) si Λ(f), sinon D(f)', 'F(e) ∪ F(f) ∪ D(e)P(f)'],
+            ['e*', 'vrai', 'P(e)', 'D(e)', 'F(e) ∪ D(e)P(e)']
+          ], 'cmp') +
+          `<p>(D(e)P(f) désigne l'ensemble des couples xy avec x ∈ D(e) et y ∈ P(f).)</p>
+<p><strong>Preuve.</strong> On montre par induction sur l'expression linéaire e que L(e) \\ {ε} = L(P(e), D(e), F(e)) et que Λ(e) est vrai si et seulement si ε ∈ L(e). Les cas ∅, ε et a sont immédiats. Pour a : le mot a est dans L(P, D, F) avec P = D = {a} et F = ∅, et un mot de longueur ≥ 2 contient un facteur de longueur 2, qui est interdit.</p>
+<p><em>Union e + f.</em> L'expression e + f est linéaire, donc Σ<sub>e</sub> et Σ<sub>f</sub> sont disjoints. Soit w non vide dans L(P(e) ∪ P(f), D(e) ∪ D(f), F(e) ∪ F(f)). Supposons que sa première lettre soit dans Σ<sub>e</sub>. Un facteur xy de w avec x ∈ Σ<sub>e</sub> ne peut pas être dans F(f) ⊆ Σ<sub>f</sub><sup>2</sup>, donc il est dans F(e), et y ∈ Σ<sub>e</sub> : de proche en proche, toutes les lettres de w sont dans Σ<sub>e</sub>. Sa première lettre est dans P(e) (car P(f) ⊆ Σ<sub>f</sub>), sa dernière dans D(e), ses facteurs dans F(e) : w ∈ L(e) par hypothèse d'induction. Le cas Σ<sub>f</sub> est symétrique. Réciproquement, un mot de L(e) ou de L(f) vérifie évidemment les conditions de l'union.</p>
+<p><em>Concaténation ef.</em> Les alphabets Σ<sub>e</sub> et Σ<sub>f</sub> sont encore disjoints.</p>
+<ul>
+<li><em>« ⊆ ».</em> Soit w = uv avec u ∈ L(e), v ∈ L(f), w ≠ ε. Si u ≠ ε, la première lettre de w est dans P(e) ; si u = ε, alors ε ∈ L(e) et c'est la première lettre de v, qui est dans P(f). De même pour la dernière lettre (dans D(f) si v ≠ ε, sinon dans D(e) avec ε ∈ L(f)). Un facteur de longueur 2 de w est un facteur de u (dans F(e)), de v (dans F(f)), ou chevauche la frontière : c'est alors le couple (dernière lettre de u, première lettre de v) ∈ D(e)P(f).</li>
+<li><em>« ⊇ ».</em> Soit w non vide dans L(P, D, F) pour les données de ef. Les facteurs possibles sont dans Σ<sub>e</sub><sup>2</sup>, Σ<sub>f</sub><sup>2</sup> ou Σ<sub>e</sub>Σ<sub>f</sub> (jamais Σ<sub>f</sub>Σ<sub>e</sub>) : toutes les lettres de Σ<sub>e</sub> sont donc avant celles de Σ<sub>f</sub>, et w = uv avec u ∈ Σ<sub>e</sub>*, v ∈ Σ<sub>f</sub>*. Si u ≠ ε : sa première lettre est dans P ∩ Σ<sub>e</sub> = P(e), ses facteurs sont dans F(e), et sa dernière lettre est dans D(e) (soit parce que v ≠ ε et que le facteur frontière est dans D(e)P(f), soit parce que v = ε et que la dernière lettre de w est dans D ∩ Σ<sub>e</sub>, ce qui impose ε ∈ L(f)) ; donc u ∈ L(e). Si u = ε : la première lettre de w est dans P ∩ Σ<sub>f</sub>, ce qui impose ε ∈ L(e), et u = ε ∈ L(e). Symétriquement, v ∈ L(f). Donc w = uv ∈ L(e)L(f).</li>
+</ul>
+<p><em>Étoile e*.</em></p>
+<ul>
+<li><em>« ⊆ ».</em> Soit w = u<sub>1</sub>…u<sub>k</sub> avec des u<sub>i</sub> ∈ L(e) non vides. La première lettre de w est dans P(e), la dernière dans D(e), les facteurs à l'intérieur d'un u<sub>i</sub> sont dans F(e), et un facteur qui chevauche deux blocs consécutifs est dans D(e)P(e).</li>
+<li><em>« ⊇ ».</em> Soit w non vide vérifiant les conditions de e*. Coupons w entre deux lettres consécutives xy chaque fois que xy ∈ D(e)P(e). Dans un morceau, un facteur interne n'est pas dans D(e)P(e), donc il est dans F(e). La première lettre d'un morceau est la première lettre de w (dans P(e)) ou la seconde lettre d'un facteur coupé (dans P(e)) ; de même sa dernière lettre est dans D(e). Chaque morceau est donc dans L(e) par hypothèse d'induction, et w ∈ L(e)*. ∎</li>
+</ul>
+<p>La linéarité n'est utilisée que pour l'union et la concaténation : c'est ce qui garantit que chaque position de l'expression est repérée sans ambiguïté par sa lettre. L'algorithme de Berry-Sethi consiste à rendre n'importe quelle expression linéaire en numérotant ses lettres, puis à effacer les numéros.</p>`
+      },
+      {
+        id: "lemme-etoile",
+        title: "Lemme de l'étoile",
+        meta: "Lemme de pompage : un outil pour montrer qu'un langage n'est pas rationnel",
+        content: `<div class="callout"><strong>Lemme de l'étoile.</strong> Soit L un langage rationnel. Il existe un entier N ≥ 1 tel que, pour tout mot w ∈ L de longueur |w| ≥ N, il existe une décomposition w = xyz avec :
+<ul>
+<li>y ≠ ε ;</li>
+<li>|xy| ≤ N ;</li>
+<li>pour tout k ≥ 0, xy<sup>k</sup>z ∈ L.</li>
+</ul></div>
+<p>Autrement dit, tout mot assez long de L contient, dans ses N premières lettres, un facteur non vide que l'on peut répéter autant de fois qu'on veut (ou supprimer) sans sortir de L. C'est ce qui se passe dans un automate fini : un mot long oblige à repasser deux fois par le même état, donc à parcourir une boucle.</p>
+<p><strong>Preuve.</strong> Comme L est rationnel, il est reconnu par un AFD A (théorème de Kleene et déterminisation). Soit N le nombre d'états de A, et soit w = a<sub>1</sub>…a<sub>m</sub> ∈ L avec m ≥ N. Notons q<sub>0</sub>, q<sub>1</sub>, …, q<sub>m</sub> les états successifs du calcul de A sur w : q<sub>0</sub> est l'état initial, q<sub>i</sub> = δ(q<sub>i−1</sub>, a<sub>i</sub>) et q<sub>m</sub> est final.</p>
+<p>Parmi les N + 1 états q<sub>0</sub>, …, q<sub>N</sub> (qui existent car m ≥ N), deux sont égaux puisque A n'a que N états (principe des tiroirs) : il existe 0 ≤ i < j ≤ N avec q<sub>i</sub> = q<sub>j</sub>. On pose x = a<sub>1</sub>…a<sub>i</sub>, y = a<sub>i+1</sub>…a<sub>j</sub> et z = a<sub>j+1</sub>…a<sub>m</sub>. Alors y ≠ ε (car i < j) et |xy| = j ≤ N.</p>` +
+          automatonSvg(
+            { 'q0':[60,110], 'qi':[250,110], 'qm':[440,110] },
+            [['q0','qi','x'], ['qi','qi','y'], ['qi','qm','z']],
+            'q0', ['qm'], 500, 190
+          ) +
+          `<p>Le mot x amène A de q<sub>0</sub> à q<sub>i</sub> ; le mot y amène A de q<sub>i</sub> à q<sub>j</sub> = q<sub>i</sub> : c'est une boucle sur q<sub>i</sub> ; le mot z amène A de q<sub>i</sub> à q<sub>m</sub>, état final. Pour tout k ≥ 0, le mot xy<sup>k</sup>z suit le même chemin en faisant k tours de boucle (aucun si k = 0) : il est reconnu. ∎</p>
+<p><strong>Comment l'utiliser.</strong> Le lemme est une implication « L rationnel ⇒ propriété ». On l'emploie donc par <strong>contraposée</strong> : pour montrer qu'un langage L <strong>n'est pas</strong> rationnel, on montre que la propriété est fausse, c'est-à-dire que pour tout N ≥ 1 il existe w ∈ L avec |w| ≥ N tel que pour toute décomposition w = xyz avec y ≠ ε et |xy| ≤ N, il existe k ≥ 0 avec xy<sup>k</sup>z ∉ L.</p>
+<p>On peut voir cela comme un jeu : l'adversaire choisit N, <strong>on choisit w</strong> (qui dépend de N), l'adversaire choisit la décomposition xyz, <strong>on choisit k</strong>. On gagne si xy<sup>k</sup>z ∉ L. Les erreurs classiques sont de choisir N ou la décomposition soi-même, et d'oublier que la condition |xy| ≤ N est la seule information dont on dispose sur y : c'est pourquoi on choisit w de sorte que ses N premières lettres soient toutes la même lettre.</p>
+<p><strong>Exemple 1 : L = {a<sup>n</sup>b<sup>n</sup> | n ≥ 0} n'est pas rationnel.</strong> Soit N ≥ 1 et w = a<sup>N</sup>b<sup>N</sup> ∈ L, de longueur 2N ≥ N. Soit w = xyz avec y ≠ ε et |xy| ≤ N. Les N premières lettres de w sont des a, donc y = a<sup>p</sup> avec 1 ≤ p ≤ N. Prenons k = 0 : xz = a<sup>N−p</sup>b<sup>N</sup>, qui n'est pas dans L puisque N − p ≠ N. Donc L n'est pas rationnel. ∎</p>
+<p><strong>Exemple 2 : L = {a<sup>n<sup>2</sup></sup> | n ≥ 0} n'est pas rationnel.</strong> Soit N ≥ 1 et w = a<sup>N<sup>2</sup></sup> ∈ L, de longueur N<sup>2</sup> ≥ N. Soit w = xyz avec y = a<sup>p</sup>, 1 ≤ p ≤ N. Prenons k = 2 : |xy<sup>2</sup>z| = N<sup>2</sup> + p, avec</p>
+<p style="text-align:center">N<sup>2</sup> &lt; N<sup>2</sup> + p ≤ N<sup>2</sup> + N &lt; N<sup>2</sup> + 2N + 1 = (N + 1)<sup>2</sup>.</p>
+<p>Cette longueur est strictement comprise entre deux carrés consécutifs : ce n'est pas un carré, donc xy<sup>2</sup>z ∉ L. ∎</p>
+<p><strong>Exemple 3 : L = {w ∈ {a, b}* | |w|<sub>a</sub> = |w|<sub>b</sub>} n'est pas rationnel.</strong> On prend w = a<sup>N</sup>b<sup>N</sup> ∈ L. Avec y = a<sup>p</sup>, 1 ≤ p ≤ N, le mot xz = a<sup>N−p</sup>b<sup>N</sup> contient moins de a que de b : il n'est pas dans L. On peut aussi raisonner par stabilité : si L était rationnel, L ∩ a*b* = {a<sup>n</sup>b<sup>n</sup>} le serait (intersection de deux rationnels), ce qui contredit l'exemple 1.</p>
+<p><strong>Attention : ce n'est pas une équivalence.</strong> Le lemme de l'étoile donne une condition <em>nécessaire</em> pour être rationnel, pas suffisante. Si un langage vérifie la conclusion du lemme, on ne peut rien en déduire. Voici un langage non rationnel qui satisfait le lemme (avec N = 1) :</p>
+<p style="text-align:center">L = { bⁱcʲ | i, j ≥ 0 } ∪ { a<sup>k</sup>b<sup>n</sup>c<sup>n</sup> | k ≥ 1, n ≥ 0 }.</p>
+<p><em>Il vérifie la conclusion du lemme avec N = 1.</em> Soit w ∈ L non vide ; on prend x = ε, y = la première lettre de w, z le reste. Si w = bⁱcʲ, supprimer ou répéter sa première lettre donne encore un mot de b*c* ⊆ L. Si w = a<sup>k</sup>b<sup>n</sup>c<sup>n</sup> avec k ≥ 1, répéter le premier a donne a<sup>k+t</sup>b<sup>n</sup>c<sup>n</sup> ∈ L ; le supprimer donne a<sup>k-1</sup>b<sup>n</sup>c<sup>n</sup>, qui est dans L si k ≥ 2, et dans b*c* ⊆ L si k = 1.</p>
+<p><em>Il n'est pourtant pas rationnel.</em> Si L l'était, L ∩ ab*c* = {ab<sup>n</sup>c<sup>n</sup> | n ≥ 0} le serait. Mais avec w = ab<sup>N</sup>c<sup>N</sup>, une décomposition xyz avec |xy| ≤ N donne deux cas : y contient le a (y = ab<sup>p</sup>), et alors xy<sup>2</sup>z contient deux a, donc n'est pas dans {ab<sup>n</sup>c<sup>n</sup>} ; ou y = b<sup>p</sup> avec p ≥ 1, et alors xz = ab<sup>N-p</sup>c<sup>N</sup> n'est pas dans {ab<sup>n</sup>c<sup>n</sup>}. Contradiction avec le lemme.</p>
+<p>Pour montrer qu'un langage est non rationnel, on combine donc souvent le lemme de l'étoile avec les propriétés de stabilité (intersection avec un langage rationnel bien choisi, complémentaire, etc.).</p>
+<p><strong>Application.</strong> Le langage {a<sup>n</sup>b<sup>n</sup>} est algébrique mais pas rationnel : c'est l'ingrédient de la fiche « Rationnels, algébriques et contextuels ».</p>`
+      },
+      {
+        id: "rationnels-algebriques",
+        title: "Rationnels, algébriques et contextuels",
+        meta: "Inclusion stricte des langages rationnels dans les langages algébriques, puis contextuels",
+        content: `<p>Un langage rationnel est décrit par une expression régulière ou un automate fini. On compare ici cette famille à celles décrites par des <strong>grammaires</strong> plus générales, et on montre que l'inclusion est stricte grâce au lemme de l'étoile.</p>
+<div class="callout"><strong>Grammaire algébrique (hors contexte).</strong> Une grammaire algébrique est un quadruplet G = (Σ, V, S, R) : un alphabet Σ de <em>terminaux</em>, un ensemble fini V de <em>variables</em> (ou non-terminaux), une variable <em>initiale</em> S ∈ V, et un ensemble fini R de <em>règles</em> de la forme X → u avec X ∈ V et u ∈ (Σ ∪ V)*. On écrit v ⇒ v' si v' s'obtient en remplaçant, dans v, une variable X par u pour une règle X → u ; ⇒* est la fermeture réflexive et transitive. Le langage engendré est L(G) = { w ∈ Σ* | S ⇒* w }. Un langage est <strong>algébrique</strong> s'il est engendré par une telle grammaire.</div>
+<p><strong>Exemple.</strong> La grammaire G de règles S → aSb | ab engendre L = {a<sup>n</sup>b<sup>n</sup> | n ≥ 1}. En effet, une dérivation de S est S ⇒ aSb ⇒ a<sup>2</sup>Sb<sup>2</sup> ⇒ … ⇒ a<sup>n-1</sup>Sb<sup>n-1</sup> ⇒ a<sup>n</sup>b<sup>n</sup> : on applique n − 1 fois la première règle, puis la seconde. Précisément, on montre par récurrence sur la longueur d'une dérivation que S ⇒* w avec w ∈ Σ* implique w = a<sup>n</sup>b<sup>n</sup> avec n ≥ 1 : la dernière règle utilisée à partir de S est soit S → ab, soit S → aSb suivie d'une dérivation de S vers un mot w' = a<sup>n</sup>b<sup>n</sup>, et alors w = aw'b.</p>
+<div class="callout"><strong>Proposition.</strong> Tout langage rationnel est algébrique.</div>
+<p><strong>Preuve.</strong> Soit L un langage reconnu par un AFD A = (Q, Σ, δ, q<sub>0</sub>, F). On définit la grammaire G dont les variables sont les états de Q, la variable initiale est q<sub>0</sub>, et dont les règles sont</p>
+<ul>
+<li>q → a·δ(q, a) pour tout état q et toute lettre a ;</li>
+<li>q → ε pour tout état final q ∈ F.</li>
+</ul>
+<p>Montrons par récurrence sur la longueur d'une dérivation que toute forme obtenue à partir de q<sub>0</sub> est du type u·q avec u ∈ Σ*, q = δ*(q<sub>0</sub>, u) (une seule variable, en fin de mot), ou bien est un mot terminal u terminé par une application de q → ε. Au départ, q<sub>0</sub> = ε·q<sub>0</sub>. Si la forme est u·q, la seule règle qui s'applique à q est q → a·δ(q, a), qui donne ua·δ(q, a), avec δ(q, a) = δ*(q<sub>0</sub>, ua) ; ou bien q → ε si q ∈ F, qui donne le mot terminal u. Ainsi un mot terminal u est engendré si et seulement si δ*(q<sub>0</sub>, u) ∈ F, c'est-à-dire u ∈ L. Donc L(G) = L. ∎</p>
+<p>Par exemple, pour l'automate émondé de la fiche précédente (q<sub>0</sub> —a→ q<sub>1</sub>, q<sub>1</sub> —b→ q<sub>1</sub>, q<sub>1</sub> —a→ q<sub>2</sub>, q<sub>2</sub> —a,b→ q<sub>2</sub>, état final q<sub>2</sub>) on obtient q<sub>0</sub> → aq<sub>1</sub>, q<sub>1</sub> → bq<sub>1</sub> | aq<sub>2</sub>, q<sub>2</sub> → aq<sub>2</sub> | bq<sub>2</sub> | ε : une grammaire <em>régulière</em>, où chaque règle produit au plus une variable, placée à droite.</p>
+<div class="callout"><strong>Théorème.</strong> L'ensemble des langages rationnels est strictement inclus dans l'ensemble des langages algébriques.</div>
+<p><strong>Preuve.</strong> L'inclusion est la proposition précédente. Pour montrer que l'inclusion est stricte, on utilise le langage L = {a<sup>n</sup>b<sup>n</sup> | n ≥ 1} est algébrique (exemple ci-dessus). Il n'est pas rationnel : la preuve de l'exemple 1 de la fiche « Lemme de l'étoile » s'applique mot pour mot. Avec N ≥ 1 et w = a<sup>N</sup>b<sup>N</sup>, toute décomposition w = xyz avec y ≠ ε et |xy| ≤ N donne y = a<sup>p</sup>, 1 ≤ p ≤ N, et xz = a<sup>N-p</sup>b<sup>N</sup> n'est pas dans L. Si L était rationnel, il vérifierait le lemme : contradiction. ∎</p>
+<p><strong>Conséquence.</strong> Un automate fini ne sait pas « compter » : pour reconnaître a<sup>n</sup>b<sup>n</sup>, il faudrait se souvenir du nombre de a lus, donc avoir une infinité d'états. Une grammaire algébrique, elle, mémorise ce compte grâce à la récursivité de la règle S → aSb.</p>
+<p><strong>Langages contextuels.</strong> Dans la hiérarchie de Chomsky, on considère des grammaires dont les règles sont de plus en plus générales :</p>` +
+          simpleTable(['Type', 'Grammaires', 'Langages engendrés'], [
+            ['3', 'régulières : X → aY, X → a ou X → ε', 'rationnels'],
+            ['2', 'hors contexte : X → u quelconque', 'algébriques'],
+            ['1', 'contextuelles : αXβ → αuβ avec u ≠ ε', 'contextuels'],
+            ['0', 'sans restriction', 'récursivement énumérables']
+          ], 'cmp') +
+          `<p>Dans une grammaire <strong>contextuelle</strong>, on ne peut remplacer une variable X que dans un certain contexte (entre α et β), et la règle ne fait jamais décroître la longueur du mot (on admet seulement S → ε pour le mot vide). On a les inclusions Rationnels ⊆ Algébriques ⊆ Contextuels ⊆ Récursivement énumérables. Chaque famille est incluse dans la suivante : une règle hors contexte X → u avec u ≠ ε est une règle contextuelle avec α = β = ε (les règles X → ε s'éliminent, sauf pour le mot vide, par un résultat classique).</p>
+<p><strong>Conséquence pour les contextuels.</strong> Le langage L = {a<sup>n</sup>b<sup>n</sup> | n ≥ 1} est engendré par S → aSb | ab, dont toutes les règles sont contextuelles (contexte vide, membre droit non vide). Il est donc contextuel, et non rationnel d'après le lemme de l'étoile. Ainsi <strong>l'ensemble des langages rationnels est strictement inclus dans l'ensemble des langages contextuels</strong>, et a fortiori dans les langages algébriques. ∎</p>
+<p><strong>Remarque.</strong> Le lemme de l'étoile est spécifique aux langages rationnels : le langage {a<sup>n</sup>b<sup>n</sup>}, algébrique, ne le vérifie pas ; des langages algébriques disposent d'un autre lemme de pompage, qui est hors du programme.</p>`
       }
     ]
   }
@@ -2409,4 +2641,3 @@ document.addEventListener('keydown', function(e) {
 </script>
 </body>
 </html>
-</body></html>
